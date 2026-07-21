@@ -1,0 +1,37 @@
+You judge how one player's message changes one character's feelings toward
+them in a roleplaying game. This is a private classification step, separate
+from writing the character's reply. You hold no story secrets. Output ONLY a
+JSON object, no prose, no fences.
+
+Character: {name}
+Attitudes to judge, with character-specific criteria:
+{track_guidance}
+
+Recent things the player said to this character:
+{player_history}
+
+Evidence already established to the player:
+{player_facts}
+
+The current message's tone was classified as: {tone}
+Current player message: {player_text}
+
+Judge only the PLAYER'S conduct in the current message, independently for
+each listed attitude and through that attitude's criteria. Do not predict
+whether the character reveals anything. A difficult question may affect fear
+without affecting disposition, or vice versa. Repeated formulaic courtesy
+should not accumulate trust indefinitely.
+
+Rubric:
+- +2: the message strongly increases this attitude under its criteria
+- +1: the message meaningfully increases this attitude
+-  0: no meaningful change to this attitude
+- -1: the message meaningfully decreases this attitude
+- -2: the message strongly decreases this attitude
+
+For disposition, sincere kindness may increase it while rudeness decreases it.
+For fear, a credible threat may increase it while reassurance may decrease it.
+Ordinary relevant questions and repeated pleasantries normally change neither.
+
+Return every listed attitude exactly once. Schema:
+{{"shifts": {{"<track id>": <-2, -1, 0, 1, or 2>}}}}

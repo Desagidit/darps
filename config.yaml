@@ -1,0 +1,28 @@
+# provider selects how calls are made. Keys come from .env (see .env.example).
+#   openai     -> OpenAI, needs OPENAI_API_KEY
+#   anthropic  -> Anthropic, needs ANTHROPIC_API_KEY
+#   ollama     -> local Ollama on :11434, no key
+#   lmstudio   -> local LM Studio on :1234, no key
+#   openai_compatible -> any other OpenAI-style server; set base_url + LLM_API_KEY
+#   litellm    -> route via LiteLLM (optional dep) using its model strings
+provider: openai
+
+model: gpt-4o-mini                # dialogue + narration
+classifier_model: gpt-4o-mini       # cheap classification; can be tiny/local
+
+base_url: null       # override the provider's default endpoint if needed
+temperature: 0.8
+classifier_temperature: 0.0
+max_tokens: 700
+
+# --- behavior toggles (all optional; defaults shown) -----------------------
+tracks: true              # attitude tracks; false = changes ignored, gates open
+canon: true               # false = improvised details are neither saved nor reused
+guardrails: true          # screen every message for meta/injection attempts
+mention_resolver: false   # LLM fallback for misspelled/nicknamed references in
+                          # messages (adds to exact alias matching; costs an
+                          # classifier call every turn)
+# hints: {after_turns: 6, style: subtle} # pacing nudges: subtle|pointed|forthcoming
+# flags_file: flags.yaml             # host-maintained progress flags, re-read per call
+history_turns: 12         # conversation exchanges remembered per character
+persona_history_turns: 12 # player inputs remembered for persona consistency

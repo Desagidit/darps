@@ -1,0 +1,30 @@
+- id: torn_letter
+  requires: []
+  journal_text: >-
+    A letter torn in half, recovered from the desk drawer: Sir Edmund's
+    solicitor confirms the NEW WILL is drafted for signature Thursday — "as
+    instructed, Lady Ashworth is not provided for."
+- id: bitter_glass
+  requires: []
+  journal_text: >-
+    The brandy glass by Sir Edmund's hand carries a faint smell beneath the
+    spirit — sweetish, chemical. The dregs have a chalky sediment brandy should
+    not leave.
+# Testimony: who can reveal this is derived from the revealing knowledge
+# entry in characters/butler.yaml — no revealed_by field.
+- id: overheard_quarrel
+  requires: []
+  conditions:
+  - track_gte:
+      track: disposition
+      value: 1
+  journal_text: >-
+    Halloway admits that near ten o'clock he heard raised voices from the study
+    — Sir Edmund and her Ladyship. He caught only one phrase through the door,
+    in her voice: "You would leave me a beggar in my own house."
+- id: cabinet_contents
+  requires: []
+  journal_text: >-
+    The gun cabinet holds Sir Edmund's service revolver — oiled, loaded, and
+    undisturbed under a season of dust. Whatever killed him, nobody reached for
+    a gun.

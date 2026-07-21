@@ -1,0 +1,60 @@
+darps_spec: 6
+name: Ashworth Manor
+author: DARPS reference pack
+player_label: the detective
+start_location: study
+
+impossible: 'leaving the snowbound manor before dawn, weapons the detective does not
+  carry, harming the dead, supernatural acts
+
+  '
+meta_response: 'The snow ticks against the glass. Whatever you were reaching for,
+  it isn''t in this house. The night — and the case — are still waiting.
+
+  '
+tracks:
+  disposition:
+    min: -3
+    max: 3
+    default: 0
+    guidance: >
+      Sincere respect, patience, kindness, and conduct that protects a
+      character's legitimate interests increase disposition. Rudeness,
+      exploitation, contempt, and unfair accusations decrease it. Routine
+      questions, repeated pleasantries, and merely discussing grim subjects
+      do not change it.
+  fear:
+    min: 0
+    max: 3
+    default: 0
+    guidance: >
+      Credible threats, demonstrated capacity for harm, and evidence of
+      immediate personal danger increase fear. Bluster, ordinary questioning,
+      and social awkwardness do not. Credible reassurance or removal of a
+      perceived danger can reduce fear.
+default_track: disposition
+
+# Session-wide judgments of how the player inhabits the detective role. These
+# are never shown to NPC response models and are separate from attitude tracks.
+persona:
+  period_authenticity:
+    min: -3
+    max: 3
+    default: 0
+    speed: 0.25
+    guidance: >
+      Reward conduct and speech plausibly consistent with a courteous retired
+      detective in 1923. Do not require theatrical archaisms or reward merely
+      sprinkling period words into otherwise generic speech. Penalize explicit
+      modern technology, modern policing assumptions, or knowingly breaking
+      the established role.
+  detective_method:
+    min: -3
+    max: 3
+    default: 0
+    speed: 0.25
+    guidance: >
+      Reward observation, evidence-led questions, testing contradictions, and
+      proportionate conclusions. Neutral conversation and ordinary searching
+      score zero. Penalize unsupported certainty, acting on information the
+      player has not discovered, and repeatedly ignoring established evidence.

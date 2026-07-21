@@ -1,0 +1,16 @@
+id: workshop
+name: The Restoration Workshop
+aliases: [the workshop, restoration room]
+description: >-
+  Long benches stand beneath task lamps. Clocks in varying states of repair
+  cover the walls. A large paper ledger lies beside the locked tool cabinet.
+scenery: >-
+  Brass filings, labelled drawers, cotton gloves, rain on the skylight, and
+  the irregular ticking of half-restored movements.
+shared_knowledge:
+  - scope: workshop
+    content: Deliveries are recorded in the ledger beside the main bench.
+search_reveals:
+  - reveals: altered_ledger
+    where: the delivery ledger beside the main bench
+    triggers: [ledger, book, deliveries, ink, entry]

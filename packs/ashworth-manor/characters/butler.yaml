@@ -1,0 +1,76 @@
+id: butler
+name: Mr. Halloway
+summary: the butler, thirty years in service
+aliases: [Halloway, Mr Halloway, the butler]
+knowledge_scopes: [household]
+
+voice: >
+  Formal, precise, unfailingly courteous even when evasive. Long pauses.
+  Refers to the dead man as "Sir Edmund" and the widow as "her Ladyship."
+  Never uses slang. When uncomfortable, he polishes something.
+
+background: >
+  Sixty-one. Entered service at Ashworth Manor under Sir Edmund's father.
+  A widower himself; his late wife was the manor's cook. No children.
+  Considers the household's dignity his personal responsibility. Privately
+  fond of her Ladyship, whom he has watched endure a cold marriage.
+
+# The brandy routine lives in the study's `shared_knowledge:` (household scope) —
+# shared knowledge belongs on the entity it describes.
+knowledge:
+  - content: "He found the body at 11:30 pm when bringing the nightly cocoa."
+  - content: "Sir Edmund had been in a foul temper all week over 'family matters.'"
+  - content: "The nephew, Mr. Gerald, was expected to visit on Thursday."
+  - content: >
+      Near ten o'clock he heard raised voices from the study — Sir Edmund and
+      her Ladyship. Through the door he caught one phrase, in her voice:
+      "You would leave me a beggar in my own house."
+    reveals: overheard_quarrel
+    why: >
+      He is protecting her Ladyship. He fears the quarrel makes her look
+      guilty and does not believe her capable of murder. He will deny having
+      heard anything unless he has come to trust the detective.
+    tell: >
+      When asked directly about the evening or about her Ladyship, he
+      hesitates a half-second too long and changes the subject to the cocoa.
+
+track_settings:
+  disposition:
+    start: -0.5   # professionally cooperative, personally guarded
+    speed: 0.5    # trust takes several consistently good exchanges
+    guidance: > 
+      Politeness, patience, and concern for Lady Constance can earn trust.
+      Accusations make him retreat into wounded formality. Hostility makes him
+      answer in monosyllables and find duties elsewhere. He cannot be
+      intimidated into the truth — only trusted into it.
+  fear:
+    start: 0
+    speed: 0.5
+    guidance: >
+      This seasoned servant is especially unmoved by insults or investigative
+      pressure. Threats against her Ladyship or the staff affect him more than
+      threats against himself.
+
+track_prose:
+  disposition:
+    "-2": >
+      Halloway has been insulted or worse. He answers in clipped monosyllables,
+      volunteers nothing, and looks for any excuse to withdraw.
+    "0": >
+      Halloway is guarded but dutiful — the household's reputation is at stake
+      and he answers what he must, no more.
+    "1": >
+      Halloway has begun to trust the detective's discretion. He is more
+      forthcoming, though still protective of her Ladyship.
+    "2": >
+      Halloway trusts the detective and is quietly relieved someone competent
+      is handling matters. He speaks almost freely.
+  fear:
+    "0": >
+      Halloway is steady and self-possessed; pressure shows only as reserve.
+    "1": >
+      Halloway watches the detective carefully and keeps himself between
+      danger and the household.
+    "2": >
+      Halloway is genuinely afraid for her Ladyship or the staff, though
+      training keeps his voice controlled and his movements deliberate.

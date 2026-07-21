@@ -1,0 +1,13 @@
+- id: altered_ledger
+  requires: []
+  journal_text: >-
+    The workshop ledger has been altered: Tuesday's delivery time was changed
+    from 9:40 pm to 7:40 pm in different ink.
+
+- id: late_delivery
+  requires: [altered_ledger]
+  conditions:
+    - {track_gte: {track: disposition, value: 1}}
+  journal_text: >-
+    Mira admits the missing clock arrived after closing, and she hid that fact
+    because accepting it violated the workshop's insurance rules.

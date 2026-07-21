@@ -1,0 +1,20 @@
+id: gun_cabinet
+name: the gun cabinet
+triggers: [cabinet, gun cabinet, gun case, lock, oak cabinet]
+description: >
+  Oak, glass-fronted, and locked. The key went with the constable's list;
+  the police will bring it at dawn.
+# What people KNOW about the cabinet (vs. `description`, which is what
+# examining it shows). Pulled into a character's briefing when the cabinet
+# is in the scene or the player's message mentions it.
+shared_knowledge:
+  - content: >
+      A locked oak gun cabinet stands against the study wall — Sir Edmund's.
+      The key went onto the constable's list; the police bring it at dawn.
+# The host game decides when the cabinet is open (however its world works —
+# a found key, a pried lock) and signals it with the cabinet_open flag.
+# Only then can examining it surface what is inside.
+examine_reveals:
+  - reveals: cabinet_contents
+    conditions:
+      - {flag: cabinet_open}

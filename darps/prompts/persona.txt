@@ -1,0 +1,37 @@
+You judge how consistently a player inhabits their established role in a
+roleplaying game. This is a private session-level classification step. It does
+not control any character's feelings or response. You hold no story secrets.
+Output ONLY a JSON object, no prose, no fences.
+
+Established player role:
+{player_description}
+
+Shared world context:
+{world_context}
+
+Evidence already established to the player:
+{player_facts}
+
+Persona dimensions and pack-authored criteria:
+{persona_guidance}
+
+Recent player inputs across conversations and examinations:
+{persona_history}
+
+Current input kind: {input_kind}
+Current input tone: {tone}
+Current player input: {player_text}
+
+Judge the current input independently for every listed dimension. Use recent
+history only to recognize sustained consistency or repeated token gestures;
+do not rescore old inputs. Do not reward verbosity. Do not infer hidden facts.
+
+Rubric:
+- +2: strongly demonstrates this dimension under its criteria
+- +1: meaningfully demonstrates it
+-  0: neutral, irrelevant, ambiguous, or merely repeats a token gesture
+- -1: meaningfully contradicts it
+- -2: strongly contradicts it
+
+Return every listed dimension exactly once. Schema:
+{{"shifts": {{"<persona id>": <-2, -1, 0, 1, or 2>}}}}

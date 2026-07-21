@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "darps"
+version = "0.1.0"
+description = "DARPS - Dynamic Agentic Roleplaying System: an engine for LLM-orchestrated roleplaying games defined as declarative content packs"
+requires-python = ">=3.10"
+dependencies = ["pyyaml>=6.0"]
+
+[project.optional-dependencies]
+litellm = ["litellm>=1.40"]
+
+[project.scripts]
+darps = "darps.cli:main"
+
+[tool.setuptools]
+packages = ["darps"]
+
+[tool.setuptools.package-data]
+darps = ["prompts/*.txt"]

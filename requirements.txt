@@ -1,0 +1,5 @@
+# DARPS engine has one hard dependency; providers use the stdlib HTTP client.
+pyyaml>=6.0
+
+# OPTIONAL: only for provider: litellm
+# litellm>=1.40

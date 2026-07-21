@@ -1,0 +1,3 @@
+# Ground truth. Engine-only; reaches an LLM context ONLY via `when`-gated
+# knowledge (the widow's guilty block). Spoiler: obviously, don't read this.
+culprit: widow

@@ -1,0 +1,12 @@
+# The protagonist. `description` is injected into every LLM context so
+# narration and characters know who the player IS — and, as importantly,
+# what they are not (no weapons, no warrant, no authority until dawn).
+name: The Detective
+description: >
+  A retired Scotland Yard detective in your late fifties, a guest at the
+  manor for the shooting weekend, asked by the household to make sense of
+  Sir Edmund's death before the police can reach the manor at dawn. You have
+  a sharp eye, thirty years of interviews behind you, and no official
+  authority whatsoever — no warrant, no weapon, only the household's fraying
+  goodwill. You are dressed for dinner, not for climbing about.
+# What the detective carries is the HOST's business (world.carried per call).

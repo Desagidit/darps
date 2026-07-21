@@ -1,0 +1,11 @@
+id: brandy_glass
+name: the brandy glass
+triggers: [glass, brandy, crystal, dregs, tumbler]
+aliases: [snifter, the drink]
+description: >
+  Heavy cut crystal, one of a set of six on the sideboard. A finger of
+  brandy remains, gone syrupy at the bottom.
+# Examining it (whenever the host says it is in the scene) can surface the
+# tainted-drink fact through the normal gate system.
+examine_reveals:
+  - reveals: bitter_glass

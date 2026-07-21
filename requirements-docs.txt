@@ -1,0 +1,4 @@
+mkdocs>=1.6,<2
+# 9.7 emits an upstream MkDocs 2 advisory as a warning, which makes strict
+# documentation builds fail even when the DARPS documentation is clean.
+mkdocs-material>=9.5,<9.7

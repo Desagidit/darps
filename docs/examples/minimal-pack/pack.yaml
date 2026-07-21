@@ -1,0 +1,28 @@
+darps_spec: 6
+name: Workshop Ledger
+author: DARPS documentation
+player_label: the investigator
+start_location: workshop
+impossible: leaving the locked workshop without opening the door
+meta_response: The rain ticks against the workshop windows.
+
+tracks:
+  disposition:
+    min: -3
+    max: 3
+    default: 0
+    guidance: >-
+      Patience, discretion, and useful evidence raise disposition. Insults,
+      accusations without evidence, and threats lower it. Routine questions
+      and repeated pleasantries do not change it.
+default_track: disposition
+
+persona:
+  careful_investigator:
+    min: -3
+    max: 3
+    default: 0
+    speed: 0.25
+    guidance: >-
+      Reward examining evidence before making accusations. Neutral questions
+      do not change the score; reckless unsupported claims lower it.

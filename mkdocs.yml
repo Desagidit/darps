@@ -1,0 +1,100 @@
+site_name: DARPS
+site_description: Build safe, stateful LLM-powered conversations for games
+repo_name: DARPS
+docs_dir: docs
+site_dir: site
+strict: true
+exclude_docs: |
+  ARCHITECTURE.md
+  GUIDE.md
+  darps-reference.html
+  darps-reference_files/
+  examples/
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.tabs.link
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - pymdownx.details
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.snippets:
+      base_path:
+        - .
+        - docs
+      check_paths: true
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Overview: getting-started/index.md
+      - Create a Pack: getting-started/first-pack.md
+      - Connect a Host: getting-started/connect-host.md
+  - Concepts:
+      - Mental Model: concepts/index.md
+      - State and Saves: concepts/state-saves.md
+      - Glossary: concepts/glossary.md
+  - Pack Authoring:
+      - Overview: authoring/index.md
+      - Manifest: authoring/manifest.md
+      - Characters: authoring/characters.md
+      - Locations: authoring/locations.md
+      - Items: authoring/items.md
+      - Facts and Knowledge: authoring/facts-knowledge.md
+      - Conditions: authoring/conditions.md
+      - Best Practices: authoring/best-practices.md
+  - Host Integration:
+      - Overview: integration/index.md
+      - Providers: integration/providers.md
+      - Streaming and Errors: integration/streaming-errors.md
+  - API Reference:
+      - Overview: api/index.md
+      - HTTP API: api/http-reference.md
+      - Python and C#: api/clients.md
+  - Recipes: recipes/index.md
+  - Engine Internals:
+      - Architecture: internals/architecture.md
+      - Information Flow: internals/data-flow.md
+      - Engine Development: internals/engine-development.md
+      - Design Decisions: DECISIONS.md
+  - Reference:
+      - Pack Specification: reference/pack-specification.md
+      - Configuration: reference/configuration.md
+      - State and Events: reference/state-events.md

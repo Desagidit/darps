@@ -1,0 +1,6 @@
+id: torn_letter
+name: the torn letter
+triggers: [letter, correspondence, solicitor, halves, paper]
+description: >
+  Two halves of good writing paper, the tear clean and deliberate. The
+  solicitor's letterhead survives at the top.

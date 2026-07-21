@@ -1,0 +1,41 @@
+id: mira
+name: Mira Vale
+summary: the workshop manager
+aliases: [Mira, Ms Vale, the manager]
+knowledge_scopes: [workshop]
+
+voice: >-
+  Precise and practical. She answers directly until insurance or the late
+  delivery is mentioned, then becomes overly careful about exact wording.
+background: >-
+  Mira has managed the restoration workshop for eight years. She is proud of
+  its safety record and fears that one procedural breach could close it.
+
+knowledge:
+  - content: The missing clock was booked into the workshop on Tuesday.
+  - content: >-
+      The clock actually arrived at 9:40 pm, after the workshop had closed.
+      Mira changed the ledger because accepting an unattended late delivery
+      violated the insurance policy.
+    reveals: late_delivery
+    why: She fears losing the workshop and her employees' livelihoods.
+    tell: She corrects anyone who says the clock arrived during business hours.
+
+shared_knowledge:
+  - scope: common
+    content: Mira manages the workshop and controls access to its records.
+
+track_settings:
+  disposition:
+    start: -0.5
+    speed: 0.5
+    guidance: >-
+      Mira respects methodical examination and discretion. Unsupported public
+      accusations make her defensive.
+
+track_prose:
+  disposition:
+    "-2": She is openly defensive and answers only what procedure requires.
+    "0": She is professional but guarded.
+    "1": She believes the investigator may handle the truth responsibly.
+    "2": She is candid and actively helps reconstruct the evening.
