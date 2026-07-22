@@ -6,8 +6,10 @@
 |---|---|---|
 | `provider` | `openai` | Provider adapter or preset |
 | `model` | provider-specific | Character/narrator model |
+| `classifier_provider` | inherits `provider` | Optional classifier adapter or preset |
 | `classifier_model` | provider-specific | Screening and adjudication model |
-| `base_url` | provider default | Endpoint override |
+| `base_url` | provider default | Response-provider endpoint override |
+| `classifier_base_url` | classifier provider default | Classifier endpoint override |
 | `temperature` | `0.8` | Response-model temperature |
 | `classifier_temperature` | `0.0` | Classifier temperature |
 | `max_tokens` | `700` | Maximum generated tokens |
@@ -24,7 +26,8 @@
 ```yaml
 provider: ollama
 model: llama3.1:8b
-classifier_model: llama3.1:8b
+classifier_provider: openai
+classifier_model: gpt-4o-mini
 temperature: 0.8
 classifier_temperature: 0.0
 max_tokens: 700
@@ -37,6 +40,11 @@ hints: {after_turns: 6, style: subtle}
 history_turns: 12
 persona_history_turns: 12
 ```
+
+Omit `classifier_provider` to use `provider` for both model slots. When it is
+set, the classifier uses that provider's normal endpoint and credentials;
+`base_url` is not inherited across providers. Set `classifier_base_url` only
+for a custom classifier endpoint such as an OpenAI-compatible server.
 
 `forthcoming` is the only hint style that changes mechanics: it relaxes
 `track_gte` fact gates by one. Entities may opt out of hints with

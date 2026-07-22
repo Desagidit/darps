@@ -508,7 +508,12 @@ ids are stripped, shifts clamp to -2..2, then dimension speed and bounds apply.
 ### Host configuration (config.yaml — runtime, not pack)
 
 ```yaml
-provider: ...                # LLM provider + models (see README)
+provider: ...                # response-model provider (see README)
+model: ...                   # character/narrator model
+base_url: ...                # optional response endpoint override
+classifier_provider: ...     # optional; defaults to provider
+classifier_model: ...        # screening/adjudication model
+classifier_base_url: ...     # optional classifier endpoint override
 tracks: true                 # false = attitude mechanic off: tracks ignored,
                              #   neutral prose, track_gte gates open
 canon: true                  # false = improvised details are not requested,

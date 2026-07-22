@@ -8,9 +8,11 @@
 provider: openai
 
 model: gpt-4o-mini                # dialogue + narration
-classifier_model: gpt-4o-mini       # cheap classification; can be tiny/local
+classifier_provider: null         # optional; null inherits provider
+classifier_model: gpt-4o-mini     # cheap classification; can be tiny/local
 
-base_url: null       # override the provider's default endpoint if needed
+base_url: null                   # response-provider endpoint override
+classifier_base_url: null        # classifier endpoint override; normally omitted
 temperature: 0.8
 classifier_temperature: 0.0
 max_tokens: 700

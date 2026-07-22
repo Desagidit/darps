@@ -909,5 +909,60 @@ try:
 finally:
     httpd.shutdown(); httpd.server_close()
 
+# 33) SPLIT PROVIDERS. Classifier calls may use a separate native or LiteLLM
+#     provider. An explicit classifier provider never inherits an unrelated
+#     response base URL; omitting it preserves the original shared-provider
+#     behavior.
+old_openai_key = llm.os.environ.get("OPENAI_API_KEY")
+old_anthropic_key = llm.os.environ.get("ANTHROPIC_API_KEY")
+old_compatible_key = llm.os.environ.get("LLM_API_KEY")
+try:
+    llm.os.environ["OPENAI_API_KEY"] = "test-openai"
+    llm.os.environ["ANTHROPIC_API_KEY"] = "test-anthropic"
+    llm.os.environ["LLM_API_KEY"] = "test-compatible"
+    split_cfg = {
+        "provider": "openai", "model": "response-model",
+        "base_url": "https://responses.example/v1",
+        "classifier_provider": "anthropic",
+        "classifier_model": "classifier-model",
+    }
+    response_rc = llm._resolve(split_cfg, classifier=False)
+    classifier_rc = llm._resolve(split_cfg, classifier=True)
+    assert response_rc["provider"] == "openai"
+    assert response_rc["base_url"] == "https://responses.example/v1"
+    assert classifier_rc["provider"] == "anthropic"
+    assert classifier_rc["base_url"] == "https://api.anthropic.com/v1"
+    assert classifier_rc["api_key"] == "test-anthropic"
+
+    inherited_rc = llm._resolve({
+        "provider": "openai_compatible", "model": "response-model",
+        "classifier_model": "classifier-model",
+        "base_url": "https://shared.example/v1",
+    }, classifier=True)
+    assert inherited_rc["base_url"] == "https://shared.example/v1"
+
+    custom_classifier_rc = llm._resolve({
+        **split_cfg,
+        "classifier_provider": "openai_compatible",
+        "classifier_base_url": "https://classifier.example/v1/",
+    }, classifier=True)
+    assert custom_classifier_rc["base_url"] == "https://classifier.example/v1"
+
+    litellm_rc = llm._resolve({
+        **split_cfg,
+        "classifier_provider": "litellm",
+        "classifier_base_url": "http://gateway.example/v1",
+    }, classifier=True)
+    assert litellm_rc == {"provider": "litellm", "model": "classifier-model",
+                          "base_url": "http://gateway.example/v1"}
+finally:
+    for key, value in (("OPENAI_API_KEY", old_openai_key),
+                       ("ANTHROPIC_API_KEY", old_anthropic_key),
+                       ("LLM_API_KEY", old_compatible_key)):
+        if value is None:
+            llm.os.environ.pop(key, None)
+        else:
+            llm.os.environ[key] = value
+
 assert not REPLIES, f"unconsumed stub replies: {REPLIES}"
-print("ALL DARPS SMOKE TESTS PASSED (32 groups)")
+print("ALL DARPS SMOKE TESTS PASSED (33 groups)")

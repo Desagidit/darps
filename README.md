@@ -33,7 +33,9 @@ In the dev harness you play your game's role: `@butler what did you hear?`,
 
 Providers: set `provider:` in config.yaml to `anthropic`, `openai`, `ollama`,
 `lmstudio`, `openai_compatible` (any OpenAI-style server), or `litellm`
-(optional dep). Local models need no key.
+(optional dep). Local models need no key. Set `classifier_provider` when the
+screening and adjudication model should use a different provider; otherwise it
+inherits `provider`.
 
 ## Wire it to a game
 

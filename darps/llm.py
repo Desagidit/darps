@@ -33,20 +33,34 @@ class ProviderError(RuntimeError):
 
 
 def _resolve(cfg: dict, classifier: bool) -> dict:
-    provider = cfg.get("provider", "openai")
+    classifier_provider = cfg.get("classifier_provider") if classifier else None
+    provider = classifier_provider or cfg.get("provider", "openai")
     model_key = "classifier_model" if classifier else "model"
     model = cfg.get(model_key)
     if not isinstance(model, str) or not model.strip():
         raise ProviderError(f"config needs a non-empty '{model_key}'")
+
+    # A classifier inherits the response provider's endpoint only when it also
+    # inherits that provider. Once classifier_provider is explicit, its own
+    # preset (or classifier_base_url) must win over an unrelated base_url.
+    if classifier and cfg.get("classifier_base_url"):
+        configured_base_url = cfg["classifier_base_url"]
+    elif not classifier_provider:
+        configured_base_url = cfg.get("base_url")
+    else:
+        configured_base_url = None
+
     if provider == "litellm":
-        return {"provider": "litellm", "model": model}
+        return {"provider": "litellm", "model": model,
+                "base_url": configured_base_url}
     preset = PROVIDERS.get(provider)
     if preset is None:
         raise ProviderError(f"Unknown provider '{provider}'. Known: "
                             f"{', '.join(PROVIDERS)}, litellm.")
-    base_url = cfg.get("base_url") or preset["base_url"]
+    base_url = configured_base_url or preset["base_url"]
     if not base_url:
-        raise ProviderError(f"provider '{provider}' needs a base_url set in config.yaml.")
+        field = "classifier_base_url" if classifier_provider else "base_url"
+        raise ProviderError(f"provider '{provider}' needs {field} set in config.yaml.")
     api_key = ""
     if preset["key_env"]:
         api_key = os.environ.get(preset["key_env"], "")
@@ -184,7 +198,7 @@ def call_stream(cfg: dict, prompt: str, tag: str, *, classifier: bool = False):
     messages = [{"role": "user", "content": prompt}]
 
     if rc["provider"] == "litellm":
-        gen = _stream_litellm(rc, messages, temperature, max_tokens, cfg.get("base_url"))
+        gen = _stream_litellm(rc, messages, temperature, max_tokens, rc.get("base_url"))
     elif rc["style"] == "anthropic":
         gen = _stream_anthropic(rc, messages, temperature, max_tokens)
     else:
@@ -219,7 +233,7 @@ def call(cfg: dict, prompt: str, tag: str, *, classifier: bool = False) -> str:
     t0 = time.time()
     try:
         if rc["provider"] == "litellm":
-            text = _call_litellm(rc, messages, temperature, max_tokens, cfg.get("base_url"))
+            text = _call_litellm(rc, messages, temperature, max_tokens, rc.get("base_url"))
         elif rc["style"] == "anthropic":
             text = _call_anthropic(rc, messages, temperature, max_tokens)
         else:
