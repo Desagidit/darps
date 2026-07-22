@@ -17,7 +17,7 @@ guarantees first, features second.
   `darps/prompts/`. Prompt-template changes still get a stub test asserting
   the new instruction/data appears in assembled prompts.
 - Changes rules/state/gating → engine code, with the obligations below.
-- Read `docs/DECISIONS.md` before proposing redesigns — most "why is it
+- Read `.agents/skills/DECISIONS.md` before proposing redesigns — most "why is it
   like this" questions are answered there, and changes should argue with
   the recorded rationale.
 

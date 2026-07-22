@@ -28,9 +28,9 @@ call. Game content is a declarative "pack".
 - `clients/` — reference host clients (C# for Unity); document the wire
   contract, not compiled or tested here
 - `SPEC.md` — the pack format + API contract, versioned. This is the product.
-- `docs/ARCHITECTURE.md` — how a call works, module by module
-- `docs/DECISIONS.md` — design rationale. **Read before proposing redesigns.**
-- `docs/GUIDE.md` — human-facing explainer. **Don't read it for context** —
+- `.agents/skills/ARCHITECTURE.md` — how a call works, module by module
+- `.agents/skills/DECISIONS.md` — design rationale. **Read before proposing redesigns.**
+- `.agents/skills/GUIDE.md` — human-facing explainer. **Don't read it for context** —
   it's ARCHITECTURE.md's content in longer prose for newcomers, so loading it
   costs tokens and adds nothing. Do keep it accurate: when engine behavior
   changes in a way a host developer or pack author would notice, update it

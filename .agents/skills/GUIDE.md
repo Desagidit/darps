@@ -494,5 +494,5 @@ games are built against it.
 - **Scaffold your own** — `python -m darps new packs/my-game`, every field
   commented.
 - **SPEC.md** — the exact rules for every file and the API contract.
-- **docs/DECISIONS.md** — why the system is built this way, argued rather
+- **.agents/skills/DECISIONS.md** — why the system is built this way, argued rather
   than asserted.

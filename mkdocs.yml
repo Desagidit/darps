@@ -7,8 +7,6 @@ docs_dir: docs
 site_dir: site
 strict: true
 exclude_docs: |
-  ARCHITECTURE.md
-  GUIDE.md
   darps-reference.html
   darps-reference_files/
   examples/
@@ -95,7 +93,6 @@ nav:
       - Architecture: internals/architecture.md
       - Information Flow: internals/data-flow.md
       - Engine Development: internals/engine-development.md
-      - Design Decisions: DECISIONS.md
   - Reference:
       - Pack Specification: reference/pack-specification.md
       - Configuration: reference/configuration.md

@@ -1,8 +1,9 @@
 # Modifying the engine
 
-Read [design decisions](../DECISIONS.md) before redesigning behavior. Many
-apparently local changes cross the pack contract, static validator, runtime
-gate, prompts, state, and clients.
+Read the repository's
+[design decisions](https://github.com/Desagidit/darps/blob/main/.agents/skills/DECISIONS.md)
+before redesigning behavior. Many apparently local changes cross the pack
+contract, static validator, runtime gate, prompts, state, and clients.
 
 ## Change obligations
 
