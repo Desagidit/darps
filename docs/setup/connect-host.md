@@ -18,14 +18,19 @@ Talk to a character. The host—not DARPS—chooses the addressee:
   "world": {
     "location": "study",
     "present": ["butler"],
-    "carried": ["notebook"],
-    "in_reach": ["brandy_glass"],
+    "accessible_items": ["notebook", "brandy_glass"],
     "flags": {"cabinet_open": false}
   }
 }
 ```
 
 Send it to `POST /talk`. A result contains display prose and validated changes:
+
+Every key in `world` is optional and lasts for one call. A production host
+normally supplies `accessible_items` as the authoritative list of pack items
+available in that interaction—even when the list is empty. When present, it
+limits examination and tells DARPS which item context may enter the prompt.
+DARPS never persists or changes this list.
 
 ```json
 {

@@ -289,3 +289,15 @@ discipline: each blocking/streaming pair shares its preparation and
 application functions, so they cannot drift; `calls.jsonl` still records the
 complete exchange. Blocking calls remain the default; streaming changes
 transport timing, not the narrative contract.
+
+## D20. One authoritative accessible-item list
+DARPS does not model inventory or distinguish possession from proximity. The
+host therefore supplies one per-call `world.accessible_items` list, used for
+examination authorization, prompt grounding, and shared-knowledge relevance.
+Splitting this into carried and nearby lists implied mechanics the engine did
+not have and forced every host to translate one accessibility decision into
+two fields. An explicit empty list means no pack items are available; omission
+keeps the development harness permissive. Unknown world fields fail clearly so
+a typo cannot silently widen examination access. Reconsider only if possession
+itself gains a distinct narrative rule, in which case add that rule explicitly
+rather than splitting accessibility again.

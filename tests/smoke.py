@@ -49,8 +49,8 @@ def reading(tone="neutral", meta=False, impossible=False, topics=None):
                        "impossible": impossible, "meta": meta})
 
 SCENE = {"location": "study", "present": ["butler", "widow"],
-         "carried": ["notebook"], "in_reach": ["brandy_glass", "gun_cabinet",
-                                               "letter_opener"]}
+         "accessible_items": ["notebook", "brandy_glass", "gun_cabinet",
+                              "letter_opener"]}
 
 # 1) context isolation: butler prompt lacks guilt; widow prompt (culprit) has it.
 #    The host names the addressee — "Lady Ashworth" in the message can never
@@ -101,12 +101,12 @@ assert "The examined object (ground truth): the brandy glass" in PROMPTS[-1]
 assert "the brandy glass (id: brandy_glass)" in PROMPTS[-1]   # scene line
 
 # 5) scene restriction: the host's world defines reach — an item outside
-#    carried/in_reach cannot be examined into a reveal (message avoids the
+#    accessible_items cannot be examined into a reveal (message avoids the
 #    location findable's triggers, which are legitimately location-scoped)
 g3, st3 = game()
 REPLIES += [narr()]
 g3.examine("snifter", "sniff at it",
-           world={"location": "study", "carried": [], "in_reach": []},
+           world={"location": "study", "accessible_items": []},
            tone="neutral")
 assert st3["facts_learned"] == []
 assert "Nothing new is discoverable" in PROMPTS[-1]
@@ -346,7 +346,7 @@ assert match_item("grab the desk knife", {"letter_opener": pack.items()["letter_
 #     entity it describes, pulled into a briefing only when that entity is
 #     RELEVANT (scene or mentioned), filtered by scope; reveal authority is
 #     derived from what's actually in the briefing this turn.
-# (a) scene relevance: cabinet in in_reach -> its about-common reaches the widow
+# (a) scene relevance: accessible cabinet -> its about-common reaches the widow
 ga1, sta1 = game()
 REPLIES += [char()]
 ga1.talk("widow", "a difficult night", world=SCENE, tone="polite")
@@ -363,7 +363,7 @@ ga2, sta2 = game()
 REPLIES += [char()]
 ga2.talk("butler", "tell me about her Ladyship",
          world={"location": "study", "present": ["butler"],
-                "carried": [], "in_reach": []}, tone="probing")
+                "accessible_items": []}, tone="probing")
 assert "You know about Lady Constance Ashworth" in PROMPTS[-1]
 assert "separate rooms in private" in PROMPTS[-1]        # household: he knows it
 
@@ -372,7 +372,7 @@ ga3, sta3 = game()
 REPLIES += [char()]
 ga3.talk("butler", "a cold night to be up so late",
          world={"location": "study", "present": ["butler"],
-                "carried": [], "in_reach": []}, tone="polite")
+                "accessible_items": []}, tone="polite")
 assert "gun cabinet" not in PROMPTS[-1]                  # not in scene, not mentioned
 assert "separate rooms" not in PROMPTS[-1]               # widow not relevant
 
@@ -436,15 +436,15 @@ gaf, staf = game()
 gaf.adjust_track("widow", value=1)                       # meet the fact's track gate
 REPLIES += [char(reveals=["overheard_quarrel"])]
 gaf.talk("widow", "what happened by the gun cabinet that night?",
-         world={"location": "study", "present": ["widow"], "carried": [],
-                "in_reach": ["gun_cabinet"]}, tone="probing")
+         world={"location": "study", "present": ["widow"],
+                "accessible_items": ["gun_cabinet"]}, tone="probing")
 assert "overheard_quarrel" in staf["facts_learned"]      # cabinet in scene -> authority
 gaf2, staf2 = game()
 gaf2.adjust_track("widow", value=1)                      # same trust, no relevance
 REPLIES += [char(reveals=["overheard_quarrel"])]
 gaf2.talk("widow", "lovely weather for a wake",
-          world={"location": "study", "present": ["widow"], "carried": [],
-                 "in_reach": []}, tone="probing")
+          world={"location": "study", "present": ["widow"],
+                 "accessible_items": []}, tone="probing")
 assert "overheard_quarrel" not in staf2["facts_learned"] # not relevant -> stripped
 Pack.items = orig_items2
 
@@ -525,8 +525,8 @@ def reading_m(mentions=None, tone="neutral"):
 gm, stm = game(mention_resolver=True)
 REPLIES += [reading_m(mentions=["widow", "made_up_dragon"]), char()]
 gm.talk("butler", "tell me about the grieving missus",
-        world={"location": "study", "present": ["butler"], "carried": [],
-               "in_reach": []}, tone="probing")
+        world={"location": "study", "present": ["butler"],
+               "accessible_items": []}, tone="probing")
 interp_prompt = next(p for p, t in reversed(list(zip(PROMPTS, TAGS)))
                      if t == "classifier")
 assert "Known entities" in interp_prompt                 # roster supplied
@@ -539,15 +539,15 @@ assert "made_up_dragon" not in PROMPTS[-1]               # invented id stripped
 gm2, stm2 = game(mention_resolver=True)
 REPLIES += [reading_m(mentions=[]), char()]
 gm2.talk("butler", "tell me about her Ladyship",
-         world={"location": "study", "present": ["butler"], "carried": [],
-                "in_reach": []}, tone="probing")
+         world={"location": "study", "present": ["butler"],
+                "accessible_items": []}, tone="probing")
 assert "separate rooms in private" in PROMPTS[-1]        # alias floor held
 # (c) disabled (default): no roster or mentions field; attitude assessment still runs
 gm3, stm3 = game()
 REPLIES += [char()]
 gm3.talk("butler", "tell me about the grieving missus",
-         world={"location": "study", "present": ["butler"], "carried": [],
-                "in_reach": []}, tone="probing")
+         world={"location": "study", "present": ["butler"],
+                "accessible_items": []}, tone="probing")
 assert "separate rooms" not in PROMPTS[-1]               # nickname not resolved
 assert "Known entities" not in PROMPTS[-1]
 
@@ -941,5 +941,22 @@ finally:
         else:
             llm.os.environ[key] = value
 
+# 34) ACCESSIBLE ITEM SNAPSHOT. One authoritative field drives examination,
+#     prompt grounding, and entity relevance. Removed/unknown world keys fail
+#     instead of silently widening access to every pack item.
+gworld, _ = game()
+view = gworld._view({"location": "study",
+                     "accessible_items": ["brandy_glass"]}, manifest)
+assert view["_accessible_items"] == ["brandy_glass"]
+assert view["_accessible_items_given"] is True
+for invalid_world in ({"carried": ["notebook"]},
+                      {"in_reach": ["brandy_glass"]},
+                      {"accessible_items": "brandy_glass"}):
+    try:
+        gworld._view(invalid_world, manifest)
+        assert False, "invalid world snapshot must be rejected"
+    except ValueError:
+        pass
+
 assert not REPLIES, f"unconsumed stub replies: {REPLIES}"
-print("ALL DARPS SMOKE TESTS PASSED (33 groups)")
+print("ALL DARPS SMOKE TESTS PASSED (34 groups)")

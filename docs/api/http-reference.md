@@ -65,7 +65,7 @@ ordered `{id, journal_text}` objects for learned facts only.
   "session":"abc123",
   "character":"mira",
   "message":"When did the clock arrive?",
-  "world":{"location":"workshop","present":["mira"],"in_reach":["ledger"]},
+  "world":{"location":"workshop","present":["mira"],"accessible_items":["ledger"]},
   "tone":"probing"
 }
 ```
@@ -80,7 +80,7 @@ addressee.
   "session":"abc123",
   "target":"delivery book",
   "message":"compare the ink",
-  "world":{"location":"workshop","in_reach":["ledger"]}
+  "world":{"location":"workshop","accessible_items":["ledger"]}
 }
 ```
 

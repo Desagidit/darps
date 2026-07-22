@@ -42,7 +42,8 @@ inherits `provider`.
 ```
 POST /talk    {"session": s, "character": "butler", "message": "...",
                "world": {"location": "study", "present": [...],
-                         "carried": [...], "flags": {"cabinet_open": true}}}
+                         "accessible_items": [...],
+                         "flags": {"cabinet_open": true}}}
 POST /examine {"session": s, "target": "snifter", "message": "..."}
 ```
 

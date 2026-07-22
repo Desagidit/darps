@@ -26,7 +26,7 @@ host: talk(character, message, world?, tone?) | examine(target, message, world?,
    │
    ▼
 [1] EFFECTIVE VIEW — narrative memory + the host's snapshot for THIS call:
-    location, present characters, carried/in-reach items, flags
+    location, present characters, accessible items, flags
     (world.flags merged over the optional flags_file, re-read every call)
    │
    ▼
@@ -195,7 +195,7 @@ fact reachability.
 
 An item file is ground truth for narration plus optional gated
 `examine_reveals`. The host declares per call which items are in the scene
-(`world.carried` / `world.in_reach`); only those can be examined, and prompts
+(`world.accessible_items`); only those can be examined, and prompts
 instruct models not to assert objects the scene doesn't establish. If the
 host declares no scene, item narration stays non-committal. Aliases +
 triggers resolve loose nouns ("the snifter") deterministically.

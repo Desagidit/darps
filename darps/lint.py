@@ -251,7 +251,7 @@ def lint(pack: Pack) -> tuple[list[str], list[str]]:
                             f"to the item's name only")
     if player.get("inventory"):
         warnings.append("player.yaml: 'inventory' was removed in spec 2 and is "
-                        "ignored (the host declares carried items per call)")
+                        "ignored (the host declares accessible items per call)")
 
     # -------------------------------------------------------- characters
     for cid, char in chars.items():

@@ -1,7 +1,7 @@
 # Items
 
 Items are describable entities, not inventory records. The host tells DARPS
-which items are carried or in reach on every call.
+which items are accessible on every call.
 
 ```yaml
 --8<-- "docs/examples/minimal-pack/items/ledger.yaml"
@@ -24,5 +24,5 @@ examine_reveals:
 ```
 
 DARPS never moves, creates, equips, or persists an item. If a host supplies a
-scene with `carried` or `in_reach`, only those declared item IDs are eligible
+scene with `accessible_items`, only those declared item IDs are eligible
 for examination.

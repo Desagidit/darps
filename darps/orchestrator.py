@@ -260,17 +260,36 @@ class Game:
         """The effective state for THIS call: narrative memory + the host's
         world snapshot. Flags merge flags_file (host keeps it up to date;
         re-read every call) under per-call world flags. Never persisted."""
-        world = world or {}
+        if world is None:
+            world = {}
+        if not isinstance(world, dict):
+            raise ValueError("world must be an object")
+        allowed = {"location", "present", "accessible_items", "flags"}
+        unknown = sorted(set(world) - allowed)
+        if unknown:
+            raise ValueError(f"world contains unknown field(s): {', '.join(unknown)}")
+        for field in ("present", "accessible_items"):
+            value = world.get(field)
+            if value is not None and (not isinstance(value, list) or any(
+                    not isinstance(item, str) for item in value)):
+                raise ValueError(f"world.{field} must be a list of ids")
+        if world.get("location") is not None and not isinstance(world["location"], str):
+            raise ValueError("world.location must be an id")
+        world_flags = world.get("flags")
+        if world_flags is not None and (
+                not isinstance(world_flags, dict)
+                or any(not isinstance(key, str) or not isinstance(value, bool)
+                       for key, value in world_flags.items())):
+            raise ValueError("world.flags must map names to booleans")
         flags = dict(self._file_flags())
         flags.update(world.get("flags") or {})
         return {**self.state, "flags": flags,
                 "location": world.get("location") or manifest.get("start_location"),
                 "_present": world.get("present"),
-                "_carried": list(world.get("carried") or []),
-                "_in_reach": list(world.get("in_reach") or []),
+                "_accessible_items": list(world.get("accessible_items") or []),
                 # only restrict/assert scene objects if the host actually
-                # described them; a world of just flags says nothing about items
-                "_scene_given": ("carried" in world) or ("in_reach" in world)}
+                # supplied the field; omission keeps the dev harness permissive
+                "_accessible_items_given": "accessible_items" in world}
 
     def _file_flags(self) -> dict:
         path = self.cfg.get("flags_file")
@@ -324,7 +343,7 @@ class Game:
                            llm_mentions: list | None = None) -> dict:
         """The entities whose `shared_knowledge:` may enter this turn's
         briefing: the addressee, everything the host put in the scene
-        (present characters, carried/in-reach items, the location), and
+        (present characters, accessible items, the location), and
         anything the player's message MENTIONS by name/alias (deterministic).
         `llm_mentions` (opt-in resolver, ids already engine-validated) can
         only ADD relevance on top — fuzzy recall for misspellings and
@@ -343,7 +362,7 @@ class Game:
         add(addressee_id, chars)
         for cid in view.get("_present") or []:
             add(cid, chars)
-        for iid in view.get("_carried", []) + view.get("_in_reach", []):
+        for iid in view.get("_accessible_items", []):
             add(iid, items)
         add(view.get("location"), locations)
         mentioned = content.match_entities(message, {**chars, **items, **locations})
@@ -563,7 +582,7 @@ class Game:
         prompt = self.pack.prompt(
             "character",
             world=self._world(),
-            in_reach=self._reach_line(view),
+            accessible_items=self._accessible_items_line(view),
             player_label=manifest.get("player_label", "the player"),
             sheet=self.pack.knowledge_text(char, state=projected_view, game_vars=game_vars,
                                            manifest=manifest,
@@ -663,7 +682,7 @@ class Game:
         prompt = self.pack.prompt(
             "narrator",
             world=self._world(),
-            in_reach=self._reach_line(view),
+            accessible_items=self._accessible_items_line(view),
             player_label=manifest.get("player_label", "the player"),
             location_doc=loc_doc,
             canon=self._canon_context(),
@@ -686,13 +705,13 @@ class Game:
 
     def _resolve_item(self, target: str, message: str, view: dict):
         """Alias resolution: exact id first, then deterministic matching over
-        triggers/aliases/name. With a world snapshot, only items the host says
-        are carried or in reach are candidates; without one (dev harness),
-        every pack item is."""
+        triggers/aliases/name. When the host supplies accessible_items, only
+        those items are candidates; if omitted (dev harness), every pack item
+        remains available."""
         items = self.pack.items()
-        if view.get("_scene_given"):
-            reachable = set(view["_carried"]) | set(view["_in_reach"])
-            items = {i: it for i, it in items.items() if i in reachable}
+        if view.get("_accessible_items_given"):
+            accessible = set(view["_accessible_items"])
+            items = {i: it for i, it in items.items() if i in accessible}
         if target in items:
             return target, items[target]
         iid = content.match_item(f"{target} {message}", items)
@@ -809,14 +828,14 @@ class Game:
                     "established here and in what the scene says they carry.")
         return w
 
-    def _reach_line(self, view: dict) -> str:
+    def _accessible_items_line(self, view: dict) -> str:
         """Ground-truth 'what objects are part of this scene' line, from the
         host's snapshot. Without a snapshot (dev harness), stay silent rather
         than invent a world DARPS doesn't own."""
-        if not view.get("_scene_given"):
+        if not view.get("_accessible_items_given"):
             return "(the host game did not specify; do not dwell on objects)"
         items = self.pack.items()
-        ids = list(dict.fromkeys(view["_carried"] + view["_in_reach"]))
+        ids = list(dict.fromkeys(view["_accessible_items"]))
         named = [f"{items[i].get('name', i)} (id: {i})" for i in ids if i in items]
         return ", ".join(named) if named else "nothing of note"
 

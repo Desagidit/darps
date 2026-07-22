@@ -25,15 +25,14 @@ Supply a fresh world snapshot with response calls:
 {
   "location": "workshop",
   "present": ["mira"],
-  "carried": ["camera"],
-  "in_reach": ["ledger"],
+  "accessible_items": ["camera", "ledger"],
   "flags": {"workshop_unlocked": true}
 }
 ```
 
 All keys are optional. The snapshot lasts for one call and is never persisted.
-If `carried` or `in_reach` is provided, it also limits which pack items DARPS
-may describe as examinable.
+If `accessible_items` is provided, it limits which pack items DARPS may
+describe or examine. Supply an empty list when no pack items are available.
 
 ## Host-authority writes
 

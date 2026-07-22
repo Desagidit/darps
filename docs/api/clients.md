@@ -39,7 +39,7 @@ var session = await darps.NewSession();
 var world = new {
     location = "workshop",
     present = new[] { "mira" },
-    in_reach = new[] { "ledger" },
+    accessible_items = new[] { "ledger" },
     flags = new { workshop_unlocked = true }
 };
 var result = await darps.Talk(session, "mira", "When did it arrive?", world);

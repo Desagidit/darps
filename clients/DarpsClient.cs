@@ -17,8 +17,7 @@
 //   3. Per conversation, YOU supply the addressee + your world snapshot:
 //      var world = new { present = new[]{"blacksmith","guard"},
 //                        location = "forge",
-//                        carried = new[]{"coin_purse"},
-//                        in_reach = new[]{"anvil","broken_sword"},
+//                        accessible_items = new[]{"coin_purse","anvil","broken_sword"},
 //                        flags = new { sword_stolen = true } };
 //      var res = await darps.Talk(session, "blacksmith",
 //                                 "did you see who took the sword?", world);
@@ -78,8 +77,8 @@ public sealed class DarpsClient : IDisposable
         return res.GetProperty("session").GetString();
     }
 
-    // world: any object matching SPEC §13 — { present, location, carried,
-    // in_reach, flags }. All keys optional. tone is optional; pass null to let
+    // world: any object matching SPEC §13 — { present, location,
+    // accessible_items, flags }. All keys optional. tone is optional; pass null to let
     // DARPS read it from the message.
     public Task<JsonElement> Talk(string session, string character, string message,
                                   object world = null, string tone = null)

@@ -9,4 +9,4 @@ description: >
   a sharp eye, thirty years of interviews behind you, and no official
   authority whatsoever — no warrant, no weapon, only the household's fraying
   goodwill. You are dressed for dinner, not for climbing about.
-# What the detective carries is the HOST's business (world.carried per call).
+# Accessible items are the HOST's business (world.accessible_items per call).

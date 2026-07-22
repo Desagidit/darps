@@ -86,14 +86,14 @@ mechanics. Never invent significant facts beyond what instructions authorize.
 ''',
 "player.yaml": '''# The protagonist (optional file). `description` is injected into every
 # LLM context. What the player carries is the HOST's business, declared per
-# call via world.carried — not pack content.
+# call via world.accessible_items — not pack content.
 name: The Inheritor
 description: >
   You inherited this house from a relative you never met. You are curious,
   a little out of your depth, and carrying nothing but the solicitor's key.
 ''',
 "items/house_key.yaml": '''# An item is a DESCRIBABLE ENTITY: ground truth for narration when the
-# host says it is in the scene (world.carried / world.in_reach). DARPS never
+# host says it is available (world.accessible_items). DARPS never
 # moves or tracks items — the host owns the world.
 id: house_key
 name: the solicitor's key

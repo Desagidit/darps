@@ -1,7 +1,7 @@
 """Narrative session state — the ONLY thing DARPS persists.
 
 DARPS is a conversation layer, not a game coordinator: the host owns the world
-(who is where, what is carried, progress flags). What DARPS remembers is the
+(who is where, which items are accessible, progress flags). What DARPS remembers is the
 narrative it is the authority on: which facts the player has learned, how each
 character feels, what has been said, and what has become canon.
 

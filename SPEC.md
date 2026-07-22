@@ -232,7 +232,7 @@ character knows:
 1. the addressee themselves (shared knowledge renders as their reputation —
    "It is known about you: …"),
 2. the scene the host declared: `world.present` characters,
-   `carried`/`in_reach` items, the current location,
+   `world.accessible_items`, and the current location,
 3. entities the player's message **mentions** — matched against each
    entity's `name`/`aliases` (and item `triggers`),
 4. *(opt-in)* entities the **LLM mention resolver** identifies (config
@@ -304,7 +304,7 @@ scenery: "..."                # freely improvisable; never yields facts
 
 An item is **ground truth for narration**, nothing more. DARPS never moves,
 holds, or tracks items — the host declares per call which items are in the
-scene (`world.carried` / `world.in_reach`, §13), and only those can be
+scene (`world.accessible_items`, §13), and only those can be
 examined or asserted in prose.
 
 ```yaml
@@ -415,18 +415,20 @@ Game.add_canon(text)
 ### The world snapshot (all keys optional)
 
 ```python
-world = {"present":  [char_ids],      # who is in the scene
-         "location": location_id,     # default: manifest start_location
-         "carried":  [item_ids],      # what the player carries
-         "in_reach": [item_ids],      # other items in the scene
-         "flags":    {name: bool}}    # the host's progress signal
+world = {"present":          [char_ids],  # who is in the scene
+         "location":         location_id, # default: manifest start_location
+         "accessible_items": [item_ids],  # items available in this interaction
+         "flags":            {name: bool}} # the host's progress signal
 ```
 
 Injected per call, used for that turn, **never persisted**. If the host
-declares `carried`/`in_reach`, only those items can be examined or asserted;
-if it declares neither, item narration stays non-committal. Flags may also be
+declares `accessible_items`, only those items can be examined or asserted;
+if it omits the field, item narration stays non-committal. Flags may also be
 read from a **flags file** the game keeps up to date (config `flags_file`;
 re-read every call; per-call `world.flags` win on conflict).
+
+Unknown world fields are request errors. `present` and `accessible_items` are
+lists of pack entity ids; `location` is a location id; `flags` is an object.
 
 ### The result dict
 
