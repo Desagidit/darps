@@ -41,13 +41,12 @@ inherits `provider`.
 
 ```
 POST /talk    {"session": s, "character": "butler", "message": "...",
-               "world": {"location": "study", "present": [...],
-                         "accessible_items": [...],
+               "world": {"location": "study", "accessible_items": [...],
                          "flags": {"cabinet_open": true}}}
 POST /examine {"session": s, "target": "snifter", "message": "..."}
 ```
 
-Your game owns the world — location, presence, items, progress flags —
+Your game owns the world — location, items, progress flags —
 and injects it per call. DARPS owns the narrative: what characters know and
 hide, what the player has learned, attitudes, optional improvised canon, history. Responses carry
 `deltas` (changed attitude tracks, facts learned, canon) for your game to mirror, and the

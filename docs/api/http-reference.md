@@ -65,13 +65,33 @@ ordered `{id, journal_text}` objects for learned facts only.
   "session":"abc123",
   "character":"mira",
   "message":"When did the clock arrive?",
-  "world":{"location":"workshop","present":["mira"],"accessible_items":["ledger"]},
+  "world":{"location":"workshop","accessible_items":["ledger"]},
   "tone":"probing"
 }
 ```
 
-`tone` is optional. The character ID must exist; DARPS never guesses the
-addressee.
+| Field | Essential? | Expected type | Purpose |
+|---|---:|---|---|
+| `session` | Yes | String | Selects the live DARPS session and its narrative state. |
+| `character` | Yes | String | Exact pack ID of the character being addressed. |
+| `message` | Practically yes | String | The player’s speech or conversational action. Defaults to an empty string. |
+| `tone` | No | String | The player's tone. Suitable values are short descriptive labels such as `polite`, `friendly`, `probing`, or `hostile`; there is no fixed enumeration. A host value overrides tone classification. Guardrail screening still runs when enabled. With guardrails disabled, supplying tone skips the general screening call. |
+| `world` | No | Object | Ephemeral snapshot of relevant host-owned world state. |
+
+**The world object**
+
+DARPS accepts exactly three world fields. Every field is optional and lasts for
+one call only. Unknown fields produce `400 bad_request`.
+
+| Field | Expected type | Purpose | Fallback |
+|---|---|---|---|
+| `location` | String location ID from the pack | Grounds immediate location knowledge and narration. | Uses `start_location` from `pack.yaml`. |
+| `accessible_items` | Array of string item IDs | Authoritative list of pack items available in this interaction; grounds item context and restricts examination. | Omission leaves the development path permissive; production hosts should supply a list, including `[]`. |
+| `flags` | Object mapping string names to booleans | Supplies host-owned progress signals used by conditions. | Empty, plus any values read from `flags_file`. |
+
+`present`, `carried`, and `in_reach` are not world fields and are rejected.
+Physical presence does not determine what a character remembers; shared
+knowledge is retrieved from the addressee's scope-filtered knowledge corpus.
 
 ### `POST /examine`
 

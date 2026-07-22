@@ -9,6 +9,7 @@ engine default in darps/prompts/. Casual authors write zero prompts; power
 authors can reskin every voice.
 """
 from pathlib import Path
+import re
 
 import yaml
 
@@ -93,22 +94,20 @@ class Pack:
                                        manifest=manifest, self_id=char["id"],
                                        tracks_enabled=tracks_enabled)]
 
-    def shared_knowledge_entries(self, char: dict, relevant: dict, *, state: dict,
+    def shared_knowledge_corpus(self, char: dict, entities: dict, *, state: dict,
                                  game_vars: dict, manifest: dict,
                                  tracks_enabled: bool = True) -> list:
-        """What this character knows ABOUT the turn's relevant entities.
-        `relevant` is {entity_id: entity_dict} (characters/items/locations —
-        anything with a `name` and optional `shared_knowledge`). A shared entry
-        is included iff its scope is `common` (the default) or in the
-        speaker's `knowledge_scopes`, and its `when:` gates pass — evaluated with
-        `self` bound to the SUBJECT (the entity the entry describes), so
-        "about her, iff she's the culprit" reads naturally.
-        Returns [(subject_id, subject_name, entry)]. Entries about entities
-        that aren't relevant this turn simply don't exist — bounded retrieval
-        is the point."""
-        scopes = {"common"} | set(char.get("knowledge_scopes", []) or [])
+        """Build every shared entry this character may know right now.
+
+        Scope and conditions are applied before retrieval, so later selectors
+        can inspect only secrecy-safe content. `self` in a shared entry binds
+        to the subject entity.
+        """
+        scopes = set(char.get("knowledge_scopes", []) or [])
+        if char.get("common_knowledge", True):
+            scopes.add("common")
         out = []
-        for eid, entity in relevant.items():
+        for eid, entity in entities.items():
             for k in entity.get("shared_knowledge", []) or []:
                 if k.get("scope", "common") not in scopes:
                     continue
@@ -118,6 +117,30 @@ class Pack:
                                            tracks_enabled=tracks_enabled):
                     continue
                 out.append((eid, entity.get("name", eid), k))
+        return out
+
+    def retrieve_shared_knowledge(self, corpus: list, message: str, *,
+                                  entities: dict, immediate_ids=(),
+                                  selected_indexes=()) -> list:
+        """Select relevant entries from an already secrecy-safe corpus."""
+        immediate = set(immediate_ids)
+        selected = {i for i in selected_indexes
+                    if isinstance(i, int) and not isinstance(i, bool)
+                    and 0 <= i < len(corpus)}
+        query = _knowledge_terms(message)
+        mentioned = match_entities(message, entities)
+        out = []
+        for index, (eid, name, entry) in enumerate(corpus):
+            entity = entities.get(eid, {})
+            document = " ".join([
+                str(name), str(eid).replace("_", " "),
+                " ".join(map(str, entity.get("aliases", []) or [])),
+                " ".join(map(str, entity.get("triggers", []) or [])),
+                str(entry.get("content", "")),
+            ])
+            if (eid in immediate or eid in mentioned or index in selected
+                    or query & _knowledge_terms(document)):
+                out.append((eid, name, entry))
         return out
 
     def knowledge_text(self, char: dict, *, state: dict, game_vars: dict,
@@ -173,6 +196,22 @@ def _render_entry(k: dict, subject: str | None) -> str:
                 + "Only disclose it if the conversation and your feelings toward "
                   "the player genuinely warrant it.")
     return f"{prefix_know}{k['content']}"
+
+
+_KNOWLEDGE_STOPWORDS = {
+    "a", "about", "an", "and", "are", "as", "at", "be", "been", "but",
+    "by", "did", "do", "does", "for", "from", "had", "has", "have", "he",
+    "her", "him", "his", "how", "i", "in", "is", "it", "its", "me", "my",
+    "of", "on", "or", "our", "she", "so", "that", "the", "their", "them",
+    "they", "this", "to", "us", "was", "we", "were", "what", "when", "where",
+    "which", "who", "why", "with", "you", "your",
+}
+
+
+def _knowledge_terms(text: str) -> set[str]:
+    """Meaningful lowercase terms for conservative shared-lore retrieval."""
+    return {token for token in re.findall(r"[a-z0-9]+", (text or "").lower())
+            if len(token) >= 5 and token not in _KNOWLEDGE_STOPWORDS}
 
 
 def match_entities(text: str, entities: dict) -> set:

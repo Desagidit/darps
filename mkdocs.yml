@@ -70,6 +70,7 @@ nav:
       - Config Reference: setup/configuration.md
   - Concepts:
       - Mental Model: concepts/index.md
+      - Knowledge: concepts/knowledge.md
       - State and Saves: concepts/state-saves.md
       - Glossary: concepts/glossary.md
   - Pack Authoring:
@@ -96,4 +97,3 @@ nav:
       - Information Flow: internals/data-flow.md
       - Engine Development: internals/engine-development.md
       - States: internals/state-events.md
-

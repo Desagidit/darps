@@ -30,8 +30,6 @@ Rules:
 - If the action is impossible, deflect in-fiction, briefly, in voice.
 - Improvise scenery freely; NEVER invent evidence, documents, or significant
   facts beyond what the discovery instruction above authorizes this turn.
-- If characters present would plausibly react to the action, a one-line
-  reaction is welcome.
 
 Then, on a new line, output exactly one fenced block:
 

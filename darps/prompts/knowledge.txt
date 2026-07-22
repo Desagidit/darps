@@ -1,0 +1,16 @@
+You retrieve relevant knowledge for {name}'s response.
+
+The candidate list has already been filtered for secrecy, scope, and current
+story conditions. Select every candidate that would help answer or naturally
+respond to the player's meaning, including paraphrases, indirect references,
+nicknames, and common-sense topical connections. Do not select an entry merely
+because it is interesting.
+
+Player input:
+{player_text}
+
+Safe candidates:
+{candidates}
+
+Return JSON only:
+{{"relevant": [<candidate integer ids>]}}

@@ -2,7 +2,7 @@
 // the DARPS repo — it documents the wire contract (SPEC §13–14) in the host's
 // language. Drop it into your project and adapt.
 //
-// DARPS is a conversation layer: YOU own the world (location, presence, items,
+// DARPS is a conversation layer: YOU own the world (location, items,
 // progress flags) and send a small snapshot per call; DARPS owns the narrative
 // (what characters know/hide, facts learned, attitudes, history) and returns
 // prose + deltas for you to mirror. `deltas.tracks` is
@@ -15,8 +15,7 @@
 //      await darps.WaitHealthy();
 //      var session = await darps.NewSession();          // or NewSession(savedState)
 //   3. Per conversation, YOU supply the addressee + your world snapshot:
-//      var world = new { present = new[]{"blacksmith","guard"},
-//                        location = "forge",
+//      var world = new { location = "forge",
 //                        accessible_items = new[]{"coin_purse","anvil","broken_sword"},
 //                        flags = new { sword_stolen = true } };
 //      var res = await darps.Talk(session, "blacksmith",
@@ -77,8 +76,8 @@ public sealed class DarpsClient : IDisposable
         return res.GetProperty("session").GetString();
     }
 
-    // world: any object matching SPEC §13 — { present, location,
-    // accessible_items, flags }. All keys optional. tone is optional; pass null to let
+    // world: any object matching SPEC §13 — { location, accessible_items,
+    // flags }. All keys optional. tone is optional; pass null to let
     // DARPS read it from the message.
     public Task<JsonElement> Talk(string session, string character, string message,
                                   object world = null, string tone = null)

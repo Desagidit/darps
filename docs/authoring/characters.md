@@ -16,6 +16,7 @@ shared reputation, and per-character attitude behavior.
 | `voice` | Speech rhythm, vocabulary, and mannerisms |
 | `background` | Biography that prevents contradictory improvisation |
 | `knowledge_scopes` | Named shared-knowledge scopes this character receives |
+| `common_knowledge` | `false` opts out of implicit common-scope knowledge |
 | `knowledge` | Individual knowledge, optionally gated or revealing facts |
 | `shared_knowledge` | What others know about this character |
 | `track_settings` | Starting values, speed, and supplemental guidance |

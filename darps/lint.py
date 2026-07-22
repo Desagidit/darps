@@ -125,8 +125,13 @@ def lint(pack: Pack) -> tuple[list[str], list[str]]:
                 _lint_condition(cond, f"{where} (shared_knowledge)", game_vars, facts,
                                 tracks, errors, allow_self=True)
 
-    known_scopes = {"common"}
+    known_scopes = set()
     for cid, char in chars.items():
+        common = char.get("common_knowledge", True)
+        if not isinstance(common, bool):
+            errors.append(f"characters/{cid}: 'common_knowledge' must be true or false")
+        elif common:
+            known_scopes.add("common")
         if "knows" in char:
             errors.append(f"characters/{cid}: 'knows' was renamed in spec 6; "
                           "use 'knowledge_scopes'")
@@ -159,8 +164,10 @@ def lint(pack: Pack) -> tuple[list[str], list[str]]:
                                ceiling_state, self_id=cid)
                     for c in (k.get("when") or [])):
                 revealers.setdefault(k["reveals"], set()).add(cid)
-        scopes = {"common"} | set(char.get("knowledge_scopes", []) or []
-                                  if isinstance(char.get("knowledge_scopes"), list) else [])
+        scopes = set(char.get("knowledge_scopes", []) or []
+                     if isinstance(char.get("knowledge_scopes"), list) else [])
+        if char.get("common_knowledge", True) is True:
+            scopes.add("common")
         for eid, (_, entity) in entities.items():
             for k in entity.get("shared_knowledge", []) or []:
                 if not isinstance(k, dict) or "reveals" not in k:

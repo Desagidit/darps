@@ -180,22 +180,20 @@ characters with `knowledge_scopes: [household]` hold. Everything the world says 
 thing lives in that thing's file, which is also where a writer goes looking
 for it.
 
-The clever part is *when* that lore gets used. A character's briefing only
-pulls in the shared-knowledge entries of things that matter to the current exchange:
-whoever they're talking to, whatever the game says is in the scene, and
-whatever the player's message actually mentions by name or nickname. Ask the
-butler about her Ladyship and the household's quiet knowledge of the cold
-marriage enters his briefing; ask him about the weather and none of it does.
-Knowledge stays where it's relevant instead of sloshing into every prompt.
+The clever part is *when* that lore gets used. DARPS first collects everything
+the addressed character is allowed to know across all entity files, applying
+scope and condition gates before any relevance judgment. Only then does it
+retrieve what matters to the exchange. Ask Alice "Who makes the cocoa?" and an
+eligible entry stored on an absent Halloway can answer because the word cocoa
+is in the knowledge itself. Presence never grants or removes memory.
 
-Mention-matching is exact against names and aliases by default — fast, free,
-and predictable. But players misspell, invent nicknames, and forget names,
-so there's an optional upgrade: one config switch (`mention_resolver: true`)
-asks the screening step to also resolve loose references — "the grieving
-missus" finds Lady Ashworth. It's off by default because it costs an AI call
-every turn, and it's kept on a leash: it can only *add* lore the exact
-matcher missed, its suggestions are validated against the real entity list,
-and every scope and condition gate still applies to whatever it pulls in.
+Names, aliases, immediate location/items, and meaningful content words provide
+a deterministic retrieval floor. For paraphrases and indirect references,
+`knowledge_resolver: true` adds a semantic classifier call. It sees only the
+already secrecy-filtered corpus, its indexes are validated, and it can only
+add matches. `common` remains convenient for genuinely universal lore; named
+scopes should carry most group knowledge, and exceptional characters can set
+`common_knowledge: false`.
 
 Shared entries can even be shared *secrets* — "the whole household knows the
 marriage was cold, and any of them might say so if trusted." Which points at
@@ -295,8 +293,8 @@ in its file): the sphinx never volunteers.
 
 Your game owns the world. DARPS never moves an item, tracks a location, or
 decides what's in reach — it doesn't even remember where the player is
-between calls. Each call carries a small snapshot: where we are, who's
-present, what the player carries, what's nearby.
+between calls. Each call carries a small snapshot: where we are, which pack
+items are accessible, and the host's progress flags.
 
 What DARPS adds is the *narrative* side of objects. An item file is ground
 truth for description — the brandy glass is cut crystal, one of a set of six,

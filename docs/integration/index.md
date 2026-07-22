@@ -24,7 +24,6 @@ Supply a fresh world snapshot with response calls:
 ```json
 {
   "location": "workshop",
-  "present": ["mira"],
   "accessible_items": ["camera", "ledger"],
   "flags": {"workshop_unlocked": true}
 }

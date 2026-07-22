@@ -264,11 +264,11 @@ class Game:
             world = {}
         if not isinstance(world, dict):
             raise ValueError("world must be an object")
-        allowed = {"location", "present", "accessible_items", "flags"}
+        allowed = {"location", "accessible_items", "flags"}
         unknown = sorted(set(world) - allowed)
         if unknown:
             raise ValueError(f"world contains unknown field(s): {', '.join(unknown)}")
-        for field in ("present", "accessible_items"):
+        for field in ("accessible_items",):
             value = world.get(field)
             if value is not None and (not isinstance(value, list) or any(
                     not isinstance(item, str) for item in value)):
@@ -285,7 +285,6 @@ class Game:
         flags.update(world.get("flags") or {})
         return {**self.state, "flags": flags,
                 "location": world.get("location") or manifest.get("start_location"),
-                "_present": world.get("present"),
                 "_accessible_items": list(world.get("accessible_items") or []),
                 # only restrict/assert scene objects if the host actually
                 # supplied the field; omission keeps the dev harness permissive
@@ -339,37 +338,13 @@ class Game:
             state_mod.save(self.state, manifest["name"])
         return result
 
-    def _relevant_entities(self, addressee_id: str, message: str, view: dict,
-                           llm_mentions: list | None = None) -> dict:
-        """The entities whose `shared_knowledge:` may enter this turn's
-        briefing: the addressee, everything the host put in the scene
-        (present characters, accessible items, the location), and
-        anything the player's message MENTIONS by name/alias (deterministic).
-        `llm_mentions` (opt-in resolver, ids already engine-validated) can
-        only ADD relevance on top — fuzzy recall for misspellings and
-        nicknames, never a veto. Bounded retrieval: entities outside this set
-        contribute nothing this turn."""
+    def _knowledge_entities(self) -> dict:
+        """All possible shared-knowledge subjects, keyed by pack id."""
         chars = self.pack.characters()
         items = self.pack.items()
         locations = {lid: self.pack.location(lid)
                      for lid in self.pack.location_ids()}
-        relevant: dict = {}
-
-        def add(eid, pool):
-            if eid in pool and eid not in relevant:
-                relevant[eid] = pool[eid]
-
-        add(addressee_id, chars)
-        for cid in view.get("_present") or []:
-            add(cid, chars)
-        for iid in view.get("_accessible_items", []):
-            add(iid, items)
-        add(view.get("location"), locations)
-        mentioned = content.match_entities(message, {**chars, **items, **locations})
-        for eid in mentioned | set(llm_mentions or []):
-            for pool in (chars, items, locations):
-                add(eid, pool)
-        return relevant
+        return {**chars, **items, **locations}
 
     def _tracks_on(self) -> bool:
         return bool(self.cfg.get("tracks", True))
@@ -391,55 +366,48 @@ class Game:
     # --------------------------------------------------------- input classifier
     def _classify_input(self, message: str, manifest: dict,
                         tone: str | None) -> dict:
-        """The input classifier's duties: guardrails (meta/injection), tone
-        (tone), topics, physics violations — and, when the host opts in
-        (config `mention_resolver: true`), fuzzy entity-mention resolution for
-        misspellings/nicknames the alias lists don't cover. NEVER targeting —
-        the host already told us who or what. Skipped entirely when the host
-        supplies `tone` and both guardrails and the resolver are off."""
-        resolver = bool(self.cfg.get("mention_resolver", False))
-        if tone is not None and not self.cfg.get("guardrails", True) \
-                and not resolver:
+        """Screen guardrails, tone, topics, and physics violations.
+
+        This never chooses a target. It is skipped when the host supplies tone
+        and guardrails are disabled.
+        """
+        if tone is not None and not self.cfg.get("guardrails", True):
             return {"tone": tone}
-        mention_block, mention_field, known_ids = "", "", set()
-        if resolver:
-            # Names/aliases only — display strings; the classifier still
-            # holds no secrets. Prompt-contract rule: the `mentions` field is
-            # only requested when this roster accompanies it.
-            lines = []
-            for pool in (self.pack.characters(), self.pack.items(),
-                         {lid: self.pack.location(lid)
-                          for lid in self.pack.location_ids()}):
-                for eid, e in pool.items():
-                    known_ids.add(eid)
-                    al = ", ".join(str(a) for a in e.get("aliases", []) or [])
-                    lines.append(f"- {eid}: {e.get('name', eid)}"
-                                 + (f" (also: {al})" if al else ""))
-            mention_block = (
-                "\nKnown entities (people, things, places). The player may "
-                "misspell, nickname, or vaguely reference them:\n"
-                + "\n".join(lines) + "\n")
-            mention_field = (
-                ',\n  "mentions": [<exact ids from the entity list that the '
-                'input refers to, however loosely spelled; empty if none>]')
         prompt = self.pack.prompt(
             "classifier",
             player_label=manifest.get("player_label", "the player"),
             impossible_rules=manifest.get("impossible",
                                           "nothing beyond ordinary human ability"),
-            mention_block=mention_block,
-            mention_field=mention_field,
             player_text=message,
         )
         raw = llm.call(self.cfg, prompt, tag="classifier", classifier=True)
         reading = llm.extract_json(raw) or {}
-        # LLM proposes, engine disposes: unknown/invented ids are stripped.
-        reading["mentions"] = [m for m in (reading.get("mentions") or [])
-                               if m in known_ids]
         if tone is not None:
             reading["tone"] = tone      # host's read wins; we keep the guardrail
         reading.setdefault("tone", "neutral")
         return reading
+
+    def _resolve_shared_knowledge(self, char: dict, message: str,
+                                  corpus: list) -> list[int]:
+        """Optionally add semantic matches from an already safe corpus."""
+        if not self.cfg.get("knowledge_resolver", False) or not corpus:
+            return []
+        candidates = "\n".join(
+            f"- {index}: subject={subject_name} ({subject_id}); "
+            f"knowledge={entry.get('content', '')}"
+            for index, (subject_id, subject_name, entry) in enumerate(corpus)
+        )
+        prompt = self.pack.prompt(
+            "knowledge", name=char["name"], player_text=message,
+            candidates=candidates)
+        raw = llm.call(self.cfg, prompt, tag=f"knowledge:{char['id']}",
+                       classifier=True)
+        indexes = (llm.extract_json(raw) or {}).get("relevant", [])
+        if not isinstance(indexes, list):
+            return []
+        return [i for i in indexes
+                if isinstance(i, int) and not isinstance(i, bool)
+                and 0 <= i < len(corpus)]
 
     def _meta(self, manifest: dict, reading: dict) -> dict:
         return {"speaker": None,
@@ -570,11 +538,16 @@ class Game:
         entries = self.pack.effective_knowledge(
             char, state=projected_view, game_vars=game_vars, manifest=manifest,
             tracks_enabled=self._tracks_on())
-        relevant = self._relevant_entities(char_id, message, view,
-                                           llm_mentions=reading.get("mentions"))
-        shared = self.pack.shared_knowledge_entries(
-            char, relevant, state=projected_view, game_vars=game_vars, manifest=manifest,
-            tracks_enabled=self._tracks_on())
+        entities = self._knowledge_entities()
+        corpus = self.pack.shared_knowledge_corpus(
+            char, entities, state=projected_view, game_vars=game_vars,
+            manifest=manifest, tracks_enabled=self._tracks_on())
+        resolved = self._resolve_shared_knowledge(char, message, corpus)
+        immediate = {char_id, view.get("location"),
+                     *view.get("_accessible_items", [])}
+        shared = self.pack.retrieve_shared_knowledge(
+            corpus, message, entities=entities, immediate_ids=immediate,
+            selected_indexes=resolved)
         revealable = ({k["reveals"] for k in entries if "reveals" in k}
                       | {k["reveals"] for _, _, k in shared if "reveals" in k})
         hint_text, slack = self._character_hint(char, facts, revealable)

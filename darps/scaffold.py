@@ -182,6 +182,8 @@ aliases: [the neighbour, Mr. Brandt]
 hints: false          # this character never delivers pacing hints
 knowledge_scopes: [village] # receives village-scoped shared knowledge
                       # (`common` is implicit for everyone)
+# common_knowledge: false   # rare opt-out for an outsider/amnesiac/etc.;
+#                           # defaults to true
 
 voice: >
   Chatty, kind, a little lonely. Talks with his hands.

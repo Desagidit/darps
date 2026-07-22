@@ -48,7 +48,7 @@ def reading(tone="neutral", meta=False, impossible=False, topics=None):
     return json.dumps({"tone": tone, "topics": topics or [],
                        "impossible": impossible, "meta": meta})
 
-SCENE = {"location": "study", "present": ["butler", "widow"],
+SCENE = {"location": "study",
          "accessible_items": ["notebook", "brandy_glass", "gun_cabinet",
                               "letter_opener"]}
 
@@ -342,10 +342,10 @@ finally:
 assert match_item("hand me the snifter", {"brandy_glass": pack.items()["brandy_glass"]}) == "brandy_glass"
 assert match_item("grab the desk knife", {"letter_opener": pack.items()["letter_opener"]}) == "letter_opener"
 
-# 18) SHARED KNOWLEDGE. Entity-centric shared knowledge lives on the
-#     entity it describes, pulled into a briefing only when that entity is
-#     RELEVANT (scene or mentioned), filtered by scope; reveal authority is
-#     derived from what's actually in the briefing this turn.
+# 18) SHARED KNOWLEDGE. Entries stay organized on their subject entities, but
+#     retrieval is holistic: first build the speaker's secrecy-safe corpus by
+#     scope/conditions, then select relevant entries from across that corpus.
+#     Reveal authority is derived from what is actually selected this turn.
 # (a) scene relevance: accessible cabinet -> its about-common reaches the widow
 ga1, sta1 = game()
 REPLIES += [char()]
@@ -362,19 +362,36 @@ assert "brandy alone in the study" in PROMPTS[-1]
 ga2, sta2 = game()
 REPLIES += [char()]
 ga2.talk("butler", "tell me about her Ladyship",
-         world={"location": "study", "present": ["butler"],
-                "accessible_items": []}, tone="probing")
+         world={"location": "study", "accessible_items": []}, tone="probing")
 assert "You know about Lady Constance Ashworth" in PROMPTS[-1]
 assert "separate rooms in private" in PROMPTS[-1]        # household: he knows it
 
-# (c) NO relevance -> no about lines (bounded retrieval, the point of the design)
+# (c) NO relevance -> no about lines (retrieval still keeps prompts focused)
 ga3, sta3 = game()
 REPLIES += [char()]
 ga3.talk("butler", "a cold night to be up so late",
-         world={"location": "study", "present": ["butler"],
-                "accessible_items": []}, tone="polite")
+         world={"location": "study", "accessible_items": []}, tone="polite")
 assert "gun cabinet" not in PROMPTS[-1]                  # not in scene, not mentioned
 assert "separate rooms" not in PROMPTS[-1]               # widow not relevant
+
+# (c2) holistic content retrieval: knowledge on an ABSENT, unmentioned subject
+#      is still found because the player's topic matches the safe entry itself.
+orig_chars_cocoa = Pack.characters
+def _with_cocoa(self):
+    out = {cid: dict(c) for cid, c in orig_chars_cocoa(self).items()}
+    out["butler"]["shared_knowledge"] = list(
+        out["butler"].get("shared_knowledge", [])) + [{
+            "scope": "household",
+            "content": "Mr. Halloway prepares Sir Edmund's cocoa every evening."
+        }]
+    return out
+Pack.characters = _with_cocoa
+gcocoa, _ = game()
+REPLIES += [char()]
+gcocoa.talk("widow", "Who makes the cocoa?",
+            world={"location": "study", "accessible_items": []}, tone="neutral")
+assert "Halloway prepares Sir Edmund's cocoa" in PROMPTS[-1]
+Pack.characters = orig_chars_cocoa
 
 # (d) scope filtering — scaffold pack: mara lacks `village`, tom holds it;
 #     when-gates on about entries expire per host flags
@@ -394,6 +411,20 @@ REPLIES += [char()]
 sg2.talk("tom", "the parlor window again",
          world={"location": "parlor", "flags": {"door_opened": True}}, tone="polite")
 assert "dare each other" not in PROMPTS[-1]              # expired via not: gate
+
+# (d2) `common` is implicit by default but a character can explicitly opt out.
+orig_chars_common = Pack.characters
+def _without_common(self):
+    out = {cid: dict(c) for cid, c in orig_chars_common(self).items()}
+    out["widow"]["common_knowledge"] = False
+    return out
+Pack.characters = _without_common
+gcommon, _ = game()
+REPLIES += [char()]
+gcommon.talk("widow", "Tell me about the gun cabinet.", world=SCENE, tone="neutral")
+assert "constable's list" not in PROMPTS[-1]
+assert "separate rooms in private" in PROMPTS[-1]  # named household scope remains
+Pack.characters = orig_chars_common
 
 # (e) about `when:` binds self to the SUBJECT: a culprit-gated entry on the
 #     widow is included (she IS the culprit); planted on the butler it is not
@@ -436,15 +467,14 @@ gaf, staf = game()
 gaf.adjust_track("widow", value=1)                       # meet the fact's track gate
 REPLIES += [char(reveals=["overheard_quarrel"])]
 gaf.talk("widow", "what happened by the gun cabinet that night?",
-         world={"location": "study", "present": ["widow"],
+         world={"location": "study",
                 "accessible_items": ["gun_cabinet"]}, tone="probing")
 assert "overheard_quarrel" in staf["facts_learned"]      # cabinet in scene -> authority
 gaf2, staf2 = game()
 gaf2.adjust_track("widow", value=1)                      # same trust, no relevance
 REPLIES += [char(reveals=["overheard_quarrel"])]
 gaf2.talk("widow", "lovely weather for a wake",
-          world={"location": "study", "present": ["widow"],
-                 "accessible_items": []}, tone="probing")
+          world={"location": "study", "accessible_items": []}, tone="probing")
 assert "overheard_quarrel" not in staf2["facts_learned"] # not relevant -> stripped
 Pack.items = orig_items2
 
@@ -460,6 +490,11 @@ errs, warns = lint_mod.lint(Pack(badp))
 assert any("knowledge.yaml" in w and "removed" in w for w in warns), warns
 assert any("knowledge scope 'nonsense'" in w for w in warns), warns
 assert any("scope 'village' is used but no character" in w for w in warns), warns
+bad_common = badp / "characters" / "mara.yaml"
+bad_common.write_text(bad_common.read_text(encoding="utf-8") +
+                      "\ncommon_knowledge: sometimes\n", encoding="utf-8")
+errs, _ = lint_mod.lint(Pack(badp))
+assert any("common_knowledge" in e and "true or false" in e for e in errs), errs
 # Removed source keys fail with direct migration guidance in spec 3.
 legacy_sources = tmp / "legacy_sources"
 _sh.copytree(tmp / "p", legacy_sources)
@@ -513,43 +548,45 @@ mara_f.write_text(mara_f.read_text(encoding="utf-8").replace(
 errs, _ = lint_mod.lint(Pack(badp))
 assert not any("UNREACHABLE" in e for e in errs), errs   # about-revealer sources it
 
-# 19) OPT-IN LLM MENTION RESOLVER (config mention_resolver). Deterministic
-#     matching stays the floor; the resolver ADDS fuzzy recall for nicknames/
-#     misspellings. Invented ids are stripped; off by default.
-def reading_m(mentions=None, tone="neutral"):
-    return json.dumps({"tone": tone, "topics": [], "impossible": False,
-                       "meta": False, "mentions": mentions or []})
-# (a) enabled: classifier runs even with host tone + guardrails off, gets the
-#     roster, and its resolved mention pulls the widow's about lore for a
-#     nickname NO alias covers
-gm, stm = game(mention_resolver=True)
-REPLIES += [reading_m(mentions=["widow", "made_up_dragon"]), char()]
+# 19) OPT-IN SEMANTIC KNOWLEDGE RESOLVER. It sees only the scope/condition-
+#     filtered safe corpus, adds validated entry indexes to deterministic
+#     lexical matches, and is off by default.
+# (a) enabled: a loose reference with no exact alias can retrieve relevant lore
+gm, stm = game(knowledge_resolver=True)
+REPLIES += [json.dumps({"relevant": [1, 999]}), char()]
 gm.talk("butler", "tell me about the grieving missus",
-        world={"location": "study", "present": ["butler"],
-               "accessible_items": []}, tone="probing")
+        world={"location": "study", "accessible_items": []}, tone="probing")
 interp_prompt = next(p for p, t in reversed(list(zip(PROMPTS, TAGS)))
-                     if t == "classifier")
-assert "Known entities" in interp_prompt                 # roster supplied
-assert "- widow: Lady Constance Ashworth (also:" in interp_prompt
-assert '"mentions"' in interp_prompt                     # field requested WITH data
+                     if t == "knowledge:butler")
+assert "Safe candidates" in interp_prompt
+assert "subject=Lady Constance Ashworth" in interp_prompt
 assert "separate rooms in private" in PROMPTS[-1]        # resolver pulled her lore
-assert "made_up_dragon" not in PROMPTS[-1]               # invented id stripped
-# (b) resolver can only ADD: deterministic mention still works alongside an
-#     empty LLM read
-gm2, stm2 = game(mention_resolver=True)
-REPLIES += [reading_m(mentions=[]), char()]
+assert "999" not in PROMPTS[-1]                          # invented index stripped
+# (b) resolver can only ADD: deterministic matching still works with no picks
+gm2, stm2 = game(knowledge_resolver=True)
+REPLIES += [json.dumps({"relevant": []}), char()]
 gm2.talk("butler", "tell me about her Ladyship",
-         world={"location": "study", "present": ["butler"],
-                "accessible_items": []}, tone="probing")
+         world={"location": "study", "accessible_items": []}, tone="probing")
 assert "separate rooms in private" in PROMPTS[-1]        # alias floor held
-# (c) disabled (default): no roster or mentions field; attitude assessment still runs
+# (c) disabled (default): no semantic call; unmatched nickname stays unmatched
 gm3, stm3 = game()
 REPLIES += [char()]
 gm3.talk("butler", "tell me about the grieving missus",
-         world={"location": "study", "present": ["butler"],
-                "accessible_items": []}, tone="probing")
+         world={"location": "study", "accessible_items": []}, tone="probing")
 assert "separate rooms" not in PROMPTS[-1]               # nickname not resolved
-assert "Known entities" not in PROMPTS[-1]
+assert TAGS[-1] == "character:butler"
+# (d) secrecy precedes semantic selection: the resolver cannot see Mara's
+#     unsubscribed village lore or entity descriptions, so it cannot select it.
+gm4 = Game({**CFG, "knowledge_resolver": True}, spack,
+           state_mod.new_state(smanifest))
+REPLIES += [json.dumps({"relevant": []}), char()]
+gm4.talk("mara", "What do people around here remember?",
+         world={"location": "parlor", "accessible_items": []}, tone="probing")
+safe_prompt = next(p for p, t in reversed(list(zip(PROMPTS, TAGS)))
+                   if t == "knowledge:mara")
+assert "dare each other" not in safe_prompt              # village scope rejected first
+assert "already old when today's grandparents" not in safe_prompt
+assert "too heavy for its wall" not in safe_prompt       # description is not knowledge
 
 # 20) DISPOSITION IS A SEPARATE, SECRET-FREE JUDGMENT over player text plus
 #     authored track guidance; the reply cannot score itself.
@@ -951,6 +988,7 @@ assert view["_accessible_items"] == ["brandy_glass"]
 assert view["_accessible_items_given"] is True
 for invalid_world in ({"carried": ["notebook"]},
                       {"in_reach": ["brandy_glass"]},
+                      {"present": ["butler"]},
                       {"accessible_items": "brandy_glass"}):
     try:
         gworld._view(invalid_world, manifest)

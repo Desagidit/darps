@@ -27,13 +27,16 @@ shared_knowledge:
 
 An entry reaches a character only when:
 
-1. its subject is relevant to this interaction;
-2. its scope is `common` or appears in the character's `knowledge_scopes`;
-3. its `when` conditions pass.
+1. its scope is `common` (and the character has not opted out) or appears in
+   the character's `knowledge_scopes`;
+2. its `when` conditions pass; and
+3. the safe entry is relevant to the interaction.
 
-Relevant subjects are the addressee, host-declared scene entities, and entities
-mentioned by ID, name, or alias. `mention_resolver: true` adds a classifier
-fallback for misspellings and loose descriptions.
+DARPS retrieves across all eligible entities, not only people physically in a
+scene. Immediate context, subject names/aliases, and meaningful content words
+provide deterministic matches. `knowledge_resolver: true` optionally adds
+semantic matches from the already secrecy-filtered corpus. See
+[Knowledge](../concepts/knowledge.md) for the full model.
 
 ## Facts versus canon
 

@@ -115,5 +115,5 @@
   prose, never the numbers.
 
 **World snapshot**
-: Ephemeral host state supplied for one call: location, presence, accessible
-  items, and flags. It is never persisted by DARPS.
+: Ephemeral host state supplied for one call: location, accessible items, and
+  flags. It is never persisted by DARPS.

@@ -4,8 +4,8 @@ summary: the widow, mistress of the manor
 aliases: [Lady Ashworth, Constance, Lady Constance, Ms Ashworth, her Ladyship, the widow]
 knowledge_scopes: [household]
 
-# What others know ABOUT her, by scope. Pulled into a speaker's briefing only
-# when she is relevant to the turn (present, or mentioned by name/alias).
+# What others know ABOUT her, by scope. DARPS retrieves relevant entries from
+# each speaker's complete, scope-filtered shared-knowledge corpus.
 shared_knowledge:
   - content: "Lady Constance Ashworth is the mistress of the manor, widowed only hours ago."
   - scope: household

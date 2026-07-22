@@ -26,18 +26,14 @@ host: talk(character, message, world?, tone?) | examine(target, message, world?,
    │
    ▼
 [1] EFFECTIVE VIEW — narrative memory + the host's snapshot for THIS call:
-    location, present characters, accessible items, flags
+    location, accessible items, flags
     (world.flags merged over the optional flags_file, re-read every call)
    │
    ▼
 [2] CLASSIFIER (cheap model, temperature 0) — screening, NEVER routing
     duties: guardrails (meta/injection → manifest meta_response, no character
-    call), tone (skipped if host supplies it), topic keywords,
-    physics violations. Opt-in (`mention_resolver: true`): fuzzy entity-
-    mention resolution — the prompt gains a roster of ids/names/aliases
-    (display strings; still zero secrets) and reports loosely-spelled
-    references; ids are validated and can only ADD to deterministic matching.
-    Config `guardrails: false` + host tone + resolver off = zero screening calls.
+    call), tone (skipped if host supplies it), topic keywords, and physics
+    violations. Config `guardrails: false` + host tone = zero screening calls.
    â”‚
    â–¼
 [2Â½] SENTIMENT (talk + tracks only; cheap model) â€” player message + tone +
@@ -55,11 +51,10 @@ host: talk(character, message, world?, tone?) | examine(target, message, world?,
      character, and never enter response-generation prompts.
    │
    ├── talk ────► [3a] CHARACTER: world bible + own knowledge (when-gated) +
-   │             SHARED_KNOWLEDGE entries of this turn's RELEVANT entities (addressee ∪
-   │             host-declared scene ∪ deterministic name/alias mentions in
-   │             the message), scope-filtered by the speaker's `knowledge_scopes:` —
-   │             bounded retrieval: an irrelevant entity's lore never enters
-   │             context + track prose (not numbers) + canon + journal +
+   │             SHARED_KNOWLEDGE: build a safe corpus across ALL entities by
+   │             speaker scope + `when`, then retrieve immediate, lexical, and
+   │             optional semantic (`knowledge_resolver`) matches from only
+   │             that safe corpus + track prose (not numbers) + canon + journal +
    │             history + scene objects + tone. The same assembly yields the
    │             REVEALABLE set — the only facts this character may reveal
    │             THIS TURN.
@@ -157,11 +152,12 @@ SSE headers arrive as an `error` event. A reference C# client lives in
 What a character knows is assembled from, broadest to narrowest:
 1. `world.md` — universal (every context, narrator included)
 2. `shared_knowledge:` entries — entity-centric shared lore: each entity file
-   (character/item/location) declares what others know ABOUT it, by scope
-   (`common` implicit for all; named scopes held via `knowledge_scopes:`). Pulled only
-   for entities RELEVANT to the turn — addressee, host-declared scene, and
-   deterministic name/alias mentions in the message. Bounded retrieval by
-   subject: no relevance, no lore, no cross-contamination.
+   declares what others know ABOUT it. The engine first filters the complete
+   corpus by the addressee's scopes and entry conditions, then retrieves
+   relevant safe entries by immediate context and message/content matching.
+   `common` is implicit unless `common_knowledge: false`; named scopes come
+   from `knowledge_scopes:`. Optional semantic retrieval never sees rejected
+   entries. Descriptions are not knowledge.
 3. character file `knowledge:` — individual (always in, when-gated)
 4. canon + journal — emergent: improvised `canon_additions` and found facts
 In `shared_knowledge[].when`, `self` binds to the SUBJECT entity (the file owner).
@@ -233,7 +229,7 @@ or narrator prompts.
 ## Provider layer
 
 `config.yaml` (host-owned, not pack-owned): provider preset + model names +
-behavior toggles (`tracks`, `canon`, `hints`, `guardrails`, `mention_resolver`,
+behavior toggles (`tracks`, `canon`, `hints`, `guardrails`, `knowledge_resolver`,
 `flags_file`, `history_turns`, `persona_history_turns`). Presets:
 openai/anthropic/ollama/lmstudio/openai_compatible (stdlib HTTP client) +
 optional litellm. Keys from `.env` via `darps/env.py`. Two model slots:

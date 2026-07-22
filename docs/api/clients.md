@@ -15,7 +15,7 @@ game = Game(config, pack, new_state(pack.manifest()))
 result = game.talk(
     "mira",
     "When did the clock arrive?",
-    world={"location": "workshop", "present": ["mira"]},
+    world={"location": "workshop", "accessible_items": ["ledger"]},
 )
 print(result["prose"])
 ```
@@ -38,7 +38,6 @@ if (!await darps.WaitHealthy()) throw new Exception("DARPS did not start");
 var session = await darps.NewSession();
 var world = new {
     location = "workshop",
-    present = new[] { "mira" },
     accessible_items = new[] { "ledger" },
     flags = new { workshop_unlocked = true }
 };

@@ -6,14 +6,7 @@ shared_knowledge:
 - scope: household
   content: Sir Edmund took brandy alone in the study most evenings, from ten
     o'clock; the household knew not to disturb him there.
-description: 'Sir Edmund''s study: oak panelling, a coal fire burnt low, snow pressing
-  at the tall window. The body has been laid on the chesterfield beneath a sheet,
-  at the household''s insistence. His desk sits as he left it — papers, a green-shaded
-  lamp, the brandy glass. A decanter stands on the sideboard. Present: Mr. Halloway
-  keeps a respectful vigil by the door. Lady Ashworth sits very straight in the window
-  chair.
-
-  '
+description: 'Sir Edmund''s study: oak panelling, a coal fire burnt low, snow pressing at the tall window. The body has been laid on the chesterfield beneath a sheet, at the household''s insistence. His desk sits as he left it — papers, a green-shaded lamp, the brandy glass. A decanter stands on the sideboard. Present: Mr. Halloway keeps a respectful vigil by the door. Lady Ashworth sits very straight in the window chair.'
 search_reveals:
 - reveals: torn_letter
   where: the desk — its drawers and papers
@@ -34,8 +27,4 @@ search_reveals:
   - sideboard
   - dregs
   - smell
-scenery: 'Bookshelves of estate ledgers and military history; a cold fireplace grate
-  with ordinary paper ash; hunting prints; a barometer; the snowbound view of the
-  drive; a locked gun cabinet (key with the police, come dawn).
-
-  '
+scenery: 'Bookshelves of estate ledgers and military history; a cold fireplace grate with ordinary paper ash; hunting prints; a barometer; the snowbound view of the drive; a locked gun cabinet (key with the police, come dawn).'

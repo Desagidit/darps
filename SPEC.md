@@ -136,6 +136,8 @@ aliases: [Halloway, the butler]   # OPTIONAL alternate names (see §12)
 hints: true                   # OPTIONAL: false = never delivers pacing hints
 knowledge_scopes: [household] # OPTIONAL shared-knowledge scopes held
                               # holds (§5½); `common` is implicit for everyone
+common_knowledge: true        # OPTIONAL; false opts this character out of
+                              # common-scope entries (default true)
 shared_knowledge:             # OPTIONAL: what OTHERS know about this entity,
   - content: "..."            # by scope (§5½) — NOT what this character knows
 voice: "..."                  # speech style, quirks
@@ -223,41 +225,44 @@ Entries have full parity with `knowledge:` entries (`content`, `when:`,
 **subject** — "include this about her iff *she* is the culprit" — as does
 `track_gte`'s `of` default.
 
-### Relevance (normative)
+### Scope-first retrieval (normative)
 
-About entries enter a speaker's briefing only when the subject entity is
-**relevant to the turn**, decided deterministically — no LLM judges what a
-character knows:
+Retrieval MUST apply secrecy before relevance:
 
-1. the addressee themselves (shared knowledge renders as their reputation —
-   "It is known about you: …"),
-2. the scene the host declared: `world.present` characters,
-   `world.accessible_items`, and the current location,
-3. entities the player's message **mentions** — matched against each
-   entity's `name`/`aliases` (and item `triggers`),
-4. *(opt-in)* entities the **LLM mention resolver** identifies (config
-   `mention_resolver: true`): the classifier call receives a roster of
-   entity ids/names/aliases (display strings only — it still holds no
-   secrets) and may report loosely-spelled or nicknamed references. Resolved
-   ids are engine-validated (unknown ids stripped) and can only ADD to the
-   deterministic set, never remove from it.
+1. Collect shared entries from every character, item, and location.
+2. Discard entries whose scope the addressee does not hold. A named scope must
+   appear in `knowledge_scopes`. `common` is implicit unless the character sets
+   `common_knowledge: false`.
+3. Evaluate every `when:` gate with `self` bound to the subject, discarding
+   false entries. The result is the character's **safe corpus**.
+4. Retrieve turn-relevant entries only from that safe corpus.
 
-An entity outside this set contributes nothing this turn: retrieval is
-bounded by subject, so asking the butler about the weather pulls no Ashworth
-gossip into his context. Without the resolver, a nickname the alias list
-doesn't cover degrades to "the character doesn't bring it up" — never to a
-wrong answer; with it, misspellings and epithets ("the grieving missus")
-resolve at the cost of a classifier call every turn.
+The deterministic retrieval floor includes entries about the addressee,
+current location, and `world.accessible_items`; entries whose subject is named
+or aliased in the message; and entries whose content has meaningful lexical
+overlap with the message. Therefore Alice can answer "Who makes the cocoa?"
+from a household-scoped entry stored on the absent butler when that entry says
+he makes the cocoa. Physical presence neither grants nor removes memory.
 
-Scope filtering applies on top: the speaker gets an about entry only if its
-`scope` is `common` (the default) or in their `knowledge_scopes` list.
+Config `knowledge_resolver: true` adds one classifier call that may select
+semantic or indirect matches from the safe corpus. The resolver never sees
+entries removed by scope or conditions, returned indexes are engine-validated,
+and its choices can only add to deterministic retrieval. It is off by default.
+
+Use `common` sparingly for genuinely universal background knowledge. Prefer a
+named scope such as `household`, `guild`, or `faculty` whenever the audience is
+large but bounded.
+
+Entity `description` fields are never derived into knowledge. They are
+examination/scene ground truth and may contain details nobody knows without
+looking. Anything characters should know must be authored explicitly as
+`knowledge` or `shared_knowledge`.
 
 ### Authority
 
-The briefing is the reveal authority (§4): a character may reveal a fact
-revealed by an about entry only on turns where that entry was actually
-pulled — subject relevant, scope held, gates passed. Context and authority
-cannot disagree.
+The briefing is the reveal authority (§4): a character may reveal a fact from
+a shared entry only on turns where that safe entry was actually retrieved.
+Context and authority cannot disagree.
 
 ## 6. Conditions
 
@@ -362,11 +367,15 @@ Engines strip the block from displayed prose and validate every field.
 
 ## 11. Prompt overrides
 
-Any of `classifier.txt`, `attitudes.txt`, `persona.txt`, `character.txt`, `narrator.txt` in
+Any of `classifier.txt`, `knowledge.txt`, `attitudes.txt`, `persona.txt`,
+`character.txt`, or `narrator.txt` in
 `<pack>/prompts/` replaces the engine default. Templates use
 `{placeholder}` substitution; `{{` and `}}` escape literal braces. Overrides
-MUST preserve the events contract (§10) — the engine parses responses
-identically regardless of template origin.
+MUST preserve the response contract stated by the corresponding default:
+`knowledge.txt` returns relevant candidate indexes, classifier/adjudication
+prompts return their JSON shapes, and character/narrator prompts preserve the
+events contract (§10). The engine parses responses identically regardless of
+template origin.
 
 ## 12. Aliases
 
@@ -415,8 +424,7 @@ Game.add_canon(text)
 ### The world snapshot (all keys optional)
 
 ```python
-world = {"present":          [char_ids],  # who is in the scene
-         "location":         location_id, # default: manifest start_location
+world = {"location":         location_id, # default: manifest start_location
          "accessible_items": [item_ids],  # items available in this interaction
          "flags":            {name: bool}} # the host's progress signal
 ```
@@ -427,8 +435,8 @@ if it omits the field, item narration stays non-committal. Flags may also be
 read from a **flags file** the game keeps up to date (config `flags_file`;
 re-read every call; per-call `world.flags` win on conflict).
 
-Unknown world fields are request errors. `present` and `accessible_items` are
-lists of pack entity ids; `location` is a location id; `flags` is an object.
+Unknown world fields are request errors. `accessible_items` is a list of pack
+item ids; `location` is a location id; `flags` is an object.
 
 ### The result dict
 
@@ -482,6 +490,12 @@ Talk calls with tracks enabled additionally make a cheap `attitudes:<id>`
 classification call. It is separate from screening and reply generation;
 `tracks: false` removes it.
 
+With `knowledge_resolver: true`, talk calls make a `knowledge:<id>` classifier
+call after scope and condition filtering. It sees the player message and only
+the addressee's safe shared-knowledge corpus, proposes relevant integer
+indexes, and cannot remove deterministic matches. Unknown or malformed indexes
+are discarded.
+
 If the pack declares `persona`, every talk and examine input additionally gets
 a cheap `persona` classification. It sees the established player description,
 shared world context, already-found evidence, pack-authored guidance, recent
@@ -506,9 +520,9 @@ hints: {after_turns: 6, style: subtle} # pacing: one fruitless-turn threshold
                              #   (subtle|pointed|forthcoming); absent = off.
                              #   forthcoming relaxes track gates by 1.
 guardrails: true             # screen every message via the classifier
-mention_resolver: false      # LLM fallback for misspelled/nicknamed entity
-                             #   references (adds to deterministic matching;
-                             #   forces a classifier call every turn)
+knowledge_resolver: false    # semantic retrieval over the addressee's already
+                             #   secrecy-filtered shared-knowledge corpus;
+                             #   adds one classifier call per talk turn
 flags_file: flags.yaml       # optional: host-maintained progress flags
 history_turns: 12            # conversation exchanges remembered per character
 persona_history_turns: 12    # recent player inputs used for persona consistency

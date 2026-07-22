@@ -34,7 +34,7 @@ flowchart TB
 ```mermaid
 flowchart LR
     subgraph Host["Host-owned"]
-      World["location, presence, inventory"]
+      World["location, accessible items, flags"]
       Flags["flags and quest progress"]
       Slots["save slots"]
     end

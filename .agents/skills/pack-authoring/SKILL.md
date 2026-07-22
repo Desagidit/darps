@@ -50,9 +50,11 @@ HOST GAME, not the pack.
   (content/when/reveals); `scope:` defaults to `common` (everyone), named
   scopes reach characters with `knowledge_scopes: [scope]`. In
   `shared_knowledge[].when`, `self` =
-  the SUBJECT entity. About entries enter a briefing only when the subject is
-  RELEVANT (addressee, scene, or mentioned by name/alias) — so alias lists
-  matter doubly: they also drive mention-relevance.
+  the SUBJECT entity. DARPS first filters all entities' entries by the
+  addressee's scopes and conditions, then retrieves immediate, mentioned, and
+  content-relevant entries across that safe corpus. `common` is implicit
+  unless a rare character sets `common_knowledge: false`; prefer named scopes
+  for bounded groups. Entity descriptions never become knowledge automatically.
 - **Host flags are the progress signal.** The game injects flags per call
   (or keeps a flags file up to date); knowledge and examine_reveals gate on
   them — `{flag: clue_a}` activates a confession, `{not: {flag: clue_c}}`

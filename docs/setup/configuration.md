@@ -16,7 +16,7 @@
 | `tracks` | `true` | Enable attitudes; false opens track gates |
 | `canon` | `true` | Request, retain, and reuse canon additions |
 | `guardrails` | `true` | Screen meta/injection and physics violations |
-| `mention_resolver` | `false` | Classifier fallback for loose entity mentions |
+| `knowledge_resolver` | `false` | Semantic retrieval over the addressee's secrecy-safe shared knowledge |
 | `hints.after_turns` | `6` | Relevant fruitless turns before a hint |
 | `hints.style` | `subtle` | `subtle`, `pointed`, or `forthcoming` |
 | `flags_file` | unset | Host-maintained YAML flags, re-read per call |
@@ -35,7 +35,7 @@ max_tokens: 700
 tracks: true
 canon: false
 guardrails: true
-mention_resolver: false
+knowledge_resolver: false
 hints: {after_turns: 6, style: subtle}
 history_turns: 12
 persona_history_turns: 12

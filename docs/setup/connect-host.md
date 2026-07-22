@@ -17,7 +17,6 @@ Talk to a character. The host—not DARPS—chooses the addressee:
   "message": "What did you hear last night?",
   "world": {
     "location": "study",
-    "present": ["butler"],
     "accessible_items": ["notebook", "brandy_glass"],
     "flags": {"cabinet_open": false}
   }

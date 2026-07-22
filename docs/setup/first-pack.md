@@ -1,6 +1,7 @@
 # Create your first pack
 
-Scaffold a complete, commented pack:
+DARPS requires a Pack to run properly. A pack contains knowledge of your game world, its characters, locations and items.
+DARPS comes prepackaged with the pack "Ashworth Manor" at `docs/examples/minimal-pack`.
 
 ```bash
 python -m darps new packs/my-game
@@ -21,8 +22,7 @@ my-game/
 └── items/
 ```
 
-The documentation includes a small working pack at
-`docs/examples/minimal-pack`. Run it directly:
+The documentation includes a small working pack at `docs/examples/minimal-pack`. Run it directly:
 
 ```bash
 python -m darps validate docs/examples/minimal-pack
@@ -32,8 +32,7 @@ python -m darps play docs/examples/minimal-pack
 Use it to learn the core chain:
 
 1. `facts.yaml` declares what the player can learn.
-2. A character knowledge entry, location search rule, or item examination rule
-   provides a source for each fact.
+2. A character knowledge entry, location search rule, or item examination rule provides a source for each fact.
 3. Conditions decide whether the source is currently permitted.
 4. The model may propose a reveal; the engine verifies it.
 5. Approved facts enter the journal using their exact `journal_text`.

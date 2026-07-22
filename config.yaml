@@ -21,9 +21,9 @@ max_tokens: 700
 tracks: true              # attitude tracks; false = changes ignored, gates open
 canon: true               # false = improvised details are neither saved nor reused
 guardrails: true          # screen every message for meta/injection attempts
-mention_resolver: false   # LLM fallback for misspelled/nicknamed references in
-                          # messages (adds to exact alias matching; costs an
-                          # classifier call every turn)
+knowledge_resolver: false # optional semantic retrieval across the character's
+                          # already secrecy-filtered shared knowledge; costs one
+                          # classifier call per talk turn
 # hints: {after_turns: 6, style: subtle} # pacing nudges: subtle|pointed|forthcoming
 # flags_file: flags.yaml             # host-maintained progress flags, re-read per call
 history_turns: 12         # conversation exchanges remembered per character

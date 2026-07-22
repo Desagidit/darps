@@ -221,6 +221,10 @@ standalone-fiction use case returns — that would be a separate front end over
 the same two calls, not machinery in the engine.
 
 ## D18. `shared_knowledge:` entries — entity-centric shared knowledge, relevance-bounded
+
+**Retrieval portion superseded by D21.** Entity-centric authorship, scoped
+entries, condition binding, derived reveal authority, and the separation from
+descriptions remain current.
 Authored knowledge had two layers — `world.md` (universal) and character
 files (individual) — with nothing between. "Anyone in the household knows the
 gun cabinet exists" meant either polluting the world bible (narrator included)
@@ -246,16 +250,9 @@ block. And retrieval is **bounded by relevance, decided deterministically**:
 an entity's about entries are pulled only when it is the addressee, in the
 host-declared scene, or mentioned in the message by name/alias. No LLM
 judges what a character knows — with one bounded, opt-in exception. Players
-WILL misspell, nickname, and forget names, so config `mention_resolver: true`
-lets the classifier (still secret-free — it sees only ids/names/aliases)
-resolve loose references. The judgment is fenced three ways: ids are
-engine-validated (invented ones stripped), the resolver can only ADD to the
-deterministic set (never veto it), and a wrong addition costs mild context
-bloat, never a leak — scope and `when:` gates still apply to whatever gets
-pulled. Off by default because it forces a classifier call every turn;
-how much a game needs it depends on the game. Without it, a nickname the
-alias list doesn't cover degrades to "not brought up", never to a wrong
-answer.
+The original implementation optionally resolved entity mentions from a public
+roster. D21 removed that subject-first mechanism in favor of semantic retrieval
+over the already secrecy-filtered knowledge corpus.
 
 The consequential half survives from the first cut: shared entries can carry
 `reveals`, which made facts' `revealed_by` field meaningless. **Who can
@@ -301,3 +298,28 @@ keeps the development harness permissive. Unknown world fields fail clearly so
 a typo cannot silently widen examination access. Reconsider only if possession
 itself gains a distinct narrative rule, in which case add that rule explicitly
 rather than splitting accessibility again.
+
+## D21. Scope-first, corpus-wide knowledge retrieval; presence is not memory
+Subject-first retrieval failed ordinary questions. If Alice and Halloway share
+the `household` scope, Alice should answer "Who makes the cocoa?" from an entry
+stored on Halloway even when he is absent and unnamed. Requiring the engine to
+identify Halloway before inspecting the entry made that impossible: the topic
+that established relevance existed only inside the entry being skipped.
+
+The order is now security first, relevance second. DARPS collects shared
+entries across every entity, filters them by the addressed character's scopes
+and `when` conditions, and only then retrieves relevant entries from that safe
+corpus. Deterministic retrieval includes immediate context, subject names and
+aliases, and meaningful content overlap. Optional `knowledge_resolver: true`
+adds semantic matches but sees only the safe corpus and returns validated
+indexes. Reveal authority remains derived from entries actually selected.
+
+`common` remains implicit for ordinary characters, while
+`common_knowledge: false` supports exceptional outsiders or amnesiacs without
+removing their named scopes. Descriptions remain excluded: examination-grade
+ground truth is not automatically something characters know.
+
+`world.present` is removed. Presence neither grants knowledge nor erases
+memory, and DARPS does not implement multi-character dialogue. A future group
+conversation feature should introduce explicit participants with defined
+speaking semantics rather than overload a world snapshot field.
