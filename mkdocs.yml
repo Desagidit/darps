@@ -63,10 +63,11 @@ markdown_extensions:
 
 nav:
   - Home: index.md
-  - Getting Started:
-      - Overview: getting-started/index.md
-      - Create a Pack: getting-started/first-pack.md
-      - Connect a Host: getting-started/connect-host.md
+  - Setup:
+      - Overview: setup/index.md
+      - Create a Pack: setup/first-pack.md
+      - Connect a Host: setup/connect-host.md
+      - Config Reference: setup/configuration.md
   - Concepts:
       - Mental Model: concepts/index.md
       - State and Saves: concepts/state-saves.md
@@ -80,6 +81,7 @@ nav:
       - Facts and Knowledge: authoring/facts-knowledge.md
       - Conditions: authoring/conditions.md
       - Best Practices: authoring/best-practices.md
+      - Pack Reference: authoring/pack-specification.md
   - Host Integration:
       - Overview: integration/index.md
       - Providers: integration/providers.md
@@ -93,7 +95,5 @@ nav:
       - Architecture: internals/architecture.md
       - Information Flow: internals/data-flow.md
       - Engine Development: internals/engine-development.md
-  - Reference:
-      - Pack Specification: reference/pack-specification.md
-      - Configuration: reference/configuration.md
-      - State and Events: reference/state-events.md
+      - States: internals/state-events.md
+
