@@ -50,4 +50,4 @@ playtested. Every call is recorded in `logs/calls.jsonl`.
 
 Behavior controls such as tracks, hints, canon, guardrails, history, mention
 resolution, and flags files are documented in the
-[configuration reference](../reference/configuration.md).
+[configuration reference](../setup/configuration.md).

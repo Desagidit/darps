@@ -35,7 +35,7 @@ DARPS assembles only the context that interaction may see, calls the model, vali
 
     Run the reference scenario, then create a minimal pack.
 
-    [Getting started](getting-started/index.md)
+    [Getting started](setup/index.md)
 
 -   **Write game content**
 
@@ -63,5 +63,5 @@ DARPS assembles only the context that interaction may see, calls the model, vali
 
 </div>
 
-The [pack specification](reference/pack-specification.md) is the normative
+The [pack specification](authoring/pack-specification.md) is the normative
 contract. Tutorials explain it; they do not replace it.
