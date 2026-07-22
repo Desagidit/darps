@@ -81,6 +81,7 @@ nav:
       - Facts and Knowledge: authoring/facts-knowledge.md
       - Conditions: authoring/conditions.md
       - Best Practices: authoring/best-practices.md
+      - Recipes: authoring/recipes.md
       - Pack Reference: authoring/pack-specification.md
   - Host Integration:
       - Overview: integration/index.md
@@ -90,7 +91,6 @@ nav:
       - Overview: api/index.md
       - HTTP API: api/http-reference.md
       - Python and C#: api/clients.md
-  - Recipes: recipes/index.md
   - Engine Internals:
       - Architecture: internals/architecture.md
       - Information Flow: internals/data-flow.md
