@@ -233,32 +233,10 @@ ATTITUDES += [1]
 g9.talk("butler", "please, halloway", world=SCENE, tone="polite")
 assert "overheard_quarrel" in st9["facts_learned"]
 
-# 13) pre-spec-6 packs are refused honestly
-old = tmp / "v1"; (old / "locations").mkdir(parents=True)
-(old / "pack.yaml").write_text("darps_spec: 1\nname: Old\nstart_location: x\n",
-                               encoding="utf-8")
-(old / "world.md").write_text("w", encoding="utf-8")
-(old / "facts.yaml").write_text("[]", encoding="utf-8")
-(old / "characters").mkdir(); (old / "locations" / "x.yaml").write_text(
-    "id: x\nname: X\ndescription: d\n", encoding="utf-8")
-errs, _ = lint_mod.lint(Pack(old))
-assert any("unsupported darps_spec 1" in e for e in errs), errs
-(old / "pack.yaml").write_text("darps_spec: 2\nname: Old\nstart_location: x\n",
-                               encoding="utf-8")
-errs, _ = lint_mod.lint(Pack(old))
-assert any("unsupported darps_spec 2" in e for e in errs), errs
-(old / "pack.yaml").write_text("darps_spec: 3\nname: Old\nstart_location: x\n",
-                               encoding="utf-8")
-errs, _ = lint_mod.lint(Pack(old))
-assert any("unsupported darps_spec 3" in e for e in errs), errs
-(old / "pack.yaml").write_text("darps_spec: 4\nname: Old\nstart_location: x\n",
-                               encoding="utf-8")
-errs, _ = lint_mod.lint(Pack(old))
-assert any("unsupported darps_spec 4" in e for e in errs), errs
-(old / "pack.yaml").write_text("darps_spec: 5\nname: Old\nstart_location: x\n",
-                               encoding="utf-8")
-errs, _ = lint_mod.lint(Pack(old))
-assert any("unsupported darps_spec 5" in e for e in errs), errs
+# 13) CURRENT MANIFEST CONTRACT. Packs and scaffold output carry authored
+#     content only; no unreleased pack-format version marker is required.
+assert "darps_spec" not in manifest
+assert "darps_spec" not in scaffold.FILES["pack.yaml"]
 
 # 14) player description injected; scene line honest when host gave no scene
 g10, st10 = game()
@@ -294,7 +272,7 @@ try:
     blob = json.loads(_u.urlopen(f"http://127.0.0.1:{_port}/state?session={sess}").read().decode())["state"]
     assert blob["tracks"]["disposition"]["butler"] == 0.5
     assert "bitter_glass" in blob["facts_learned"]
-    assert set(blob) == {"state_version", "pack_id", "darps_spec", "turn",
+    assert set(blob) == {"state_version", "pack_id", "turn",
                          "facts_learned", "tracks", "canon",
                          "conversations", "fruitless_turns", "persona",
                          "persona_history"}             # narrative memory ONLY
@@ -691,11 +669,10 @@ assert fresh["fruitless_turns"] == 0 and "stall" not in fresh
 filtered = validate.filter_narrator_events({"case_relevance": 0}, [])
 assert filtered == {"reveals": [], "story_relevance": 1}
 
-# 28) VERSIONED STATE NORMALIZATION. Partial valid state is completed and
+# 28) STATE NORMALIZATION. Partial valid state is completed and
 #     numeric values clamp; wrong pack/ids/types are rejected before install.
 minimal_state = {"state_version": state_mod.STATE_VERSION,
                  "pack_id": state_mod.pack_id(manifest),
-                 "darps_spec": manifest["darps_spec"],
                  "tracks": {"disposition": {"butler": 99}}}
 normalized = state_mod.normalize_state(pack, minimal_state)
 assert normalized["tracks"]["disposition"]["butler"] == 3

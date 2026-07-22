@@ -11,8 +11,6 @@ condition vocabulary grows, this file grows in the same commit.
 from . import conditions
 from .content import Pack
 
-SUPPORTED_SPECS = (6,)
-
 # spec-1 fields the engine no longer reads; warn so migrations aren't silent
 _REMOVED_MANIFEST = ("intents", "speech_intents", "discovery_intents",
                      "item_actions", "goals", "hints", "history_turns")
@@ -30,15 +28,9 @@ def lint(pack: Pack) -> tuple[list[str], list[str]]:
     player = pack.player()
 
     # ---------------------------------------------------------- manifest
-    for field in ("darps_spec", "name", "start_location"):
+    for field in ("name", "start_location"):
         if field not in m:
             errors.append(f"pack.yaml: missing required field '{field}'")
-    if m.get("darps_spec") not in SUPPORTED_SPECS:
-        errors.append(f"pack.yaml: unsupported darps_spec {m.get('darps_spec')!r} "
-                      f"(this engine supports: "
-                      f"{', '.join(str(s) for s in SUPPORTED_SPECS)}). "
-                      f"DARPS is now a conversation layer; see SPEC.md for "
-                      f"what changed in spec 6.")
     if m.get("start_location") and m["start_location"] not in loc_ids:
         errors.append(f"pack.yaml: start_location '{m['start_location']}' has no "
                       f"locations/<id>.yaml file")

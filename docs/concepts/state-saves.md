@@ -11,7 +11,7 @@ flowchart LR
     SB -->|"GET /state"| B
 ```
 
-The state blob includes its `state_version`, `pack_id`, and `darps_spec` plus:
+The state blob includes its `state_version` and `pack_id` plus:
 
 - learned fact IDs;
 - character tracks;
@@ -49,6 +49,6 @@ Content-Type: application/json
 {"session":"abc123","state":{ ... }}
 ```
 
-Restore rejects the wrong pack/spec/state version, malformed fields, and
+Restore rejects the wrong pack, unsupported state shape, malformed fields, and
 unknown IDs. Missing narrative fields receive defaults; numeric track and
 persona values are clamped to current bounds.

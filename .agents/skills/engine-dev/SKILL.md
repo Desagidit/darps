@@ -68,8 +68,9 @@ the same rules.
 - After engine changes run `python -m darps validate packs/ashworth-manor`
   and `darps new` → validate the scaffold output.
 
-## Versioning
+## Pack contract changes
 
-Breaking pack-format changes bump `darps_spec` in SPEC.md; the engine
-declares supported versions in lint.py's manifest check and refuses others
-honestly. Additive optional fields are not breaking.
+DARPS is pre-release and has no pack-format version field. Keep `SPEC.md`,
+runtime loading, lint, scaffold output, the reference pack, and tests aligned
+as one current contract. Introduce explicit format versioning only when a
+released contract genuinely requires incompatible evolution.

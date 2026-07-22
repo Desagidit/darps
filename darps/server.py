@@ -114,7 +114,6 @@ def _pack_metadata(pack) -> dict:
     return {
         "pack_id": state_mod.pack_id(manifest),
         "name": manifest["name"],
-        "darps_spec": manifest["darps_spec"],
         "characters": [_public_entity(c) for c in pack.characters().values()],
         "locations": [_public_entity(pack.location(lid)) for lid in pack.location_ids()],
         "items": [_public_entity(item) for item in pack.items().values()],

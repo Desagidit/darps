@@ -13,10 +13,9 @@ the sole authority on: what characters know and hide, what the player has
 learned, how characters feel, what has been said.
 
 A game's content is a **pack**: a directory of declarative YAML. This document
-is the contract; a second engine could be built against it. Every pack declares
-the current schema identifier, `darps_spec: 6`. ("Conversation" is meant
-loosely: talking to a character, but also examining an item or a place —
-anything narrated.)
+is the contract; a second engine could be built against it. ("Conversation"
+is meant loosely: talking to a character, but also examining an item or a
+place — anything narrated.)
 
 **Design invariant:** every gate in a pack is expressed in the closed
 condition vocabulary (§6). No pack contains code. This is what makes packs
@@ -41,7 +40,6 @@ my-pack/
 ## 2. pack.yaml — the manifest
 
 ```yaml
-darps_spec: 6                 # required current pack-schema identifier
 name: Ashworth Manor          # display name; keys the dev harness save file
 author: you
 player_label: "the detective" # how prompts refer to the player character
@@ -519,8 +517,8 @@ thresholds are the host's, never the pack's.
 
 ### Session state (what DARPS persists)
 
-One JSON blob — identity metadata (`state_version`, `pack_id`, `darps_spec`)
-plus narrative memory: `turn`, `facts_learned`, `tracks`, `canon`,
+One JSON blob — identity metadata (`state_version`, `pack_id`) plus narrative
+memory: `turn`, `facts_learned`, `tracks`, `canon`,
 per-character `conversations`, `fruitless_turns`, session-level `persona`, and
 `persona_history`. `pack_id` is the normalized pack name. It is the save file;
 hosts round-trip it via `/state` or store it themselves. Restore rejects a

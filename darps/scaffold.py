@@ -10,7 +10,6 @@ from pathlib import Path
 
 FILES = {
 "pack.yaml": '''# DARPS pack manifest. Run `darps validate .` after every edit.
-darps_spec: 6
 name: My First Pack
 author: you
 player_label: "the visitor"          # how prompts refer to the player character

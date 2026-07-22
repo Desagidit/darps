@@ -24,7 +24,6 @@ def new_state(manifest: dict) -> dict:
     return {
         "state_version": STATE_VERSION,
         "pack_id": pack_id(manifest),
-        "darps_spec": manifest.get("darps_spec"),
         "turn": 0,
         "facts_learned": [],  # ordered fact ids the player has learned
         "tracks": {t: {} for t in manifest.get("tracks", {})},  # track -> char -> value
@@ -54,10 +53,6 @@ def normalize_state(pack, supplied: dict) -> dict:
     if supplied.get("pack_id") != expected_id:
         raise ValueError(f"state belongs to pack {supplied.get('pack_id')!r}; "
                          f"this server is {expected_id!r}")
-    if supplied.get("darps_spec") != manifest.get("darps_spec"):
-        raise ValueError(f"state targets darps_spec {supplied.get('darps_spec')!r}; "
-                         f"pack targets {manifest.get('darps_spec')!r}")
-
     state = new_state(manifest)
     facts, characters = pack.facts(), pack.characters()
     fact_ids, character_ids = set(facts), set(characters)

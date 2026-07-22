@@ -6,7 +6,6 @@
 {
   "state_version": 1,
   "pack_id": "workshop-ledger",
-  "darps_spec": 6,
   "turn": 4,
   "facts_learned": ["altered_ledger"],
   "tracks": {"disposition": {"mira": 0.5}},
