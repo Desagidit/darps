@@ -1,4 +1,4 @@
-# DARPS Pack Specification — version 6
+# DARPS Pack Specification
 
 DARPS (Dynamic Agentic Roleplaying System) is a **conversation layer between a
 host game and an LLM**. The host tells DARPS very little per call — who is
@@ -13,30 +13,10 @@ the sole authority on: what characters know and hide, what the player has
 learned, how characters feel, what has been said.
 
 A game's content is a **pack**: a directory of declarative YAML. This document
-is the contract; a second engine could be built against it. Packs declare the
-spec version they target (`darps_spec: 6`); engines refuse versions they don't
-support. ("Conversation" is meant loosely: talking to a character, but also
-examining an item or a place — anything narrated.)
-
-Version 3 standardized every authored fact-source reference on `reveals`:
-knowledge entries, entity shared-knowledge entries, location findables, and item
-`examine_reveals` entries all use the same key. Versions 1 and 2 are rejected.
-
-Version 4 removes the inert `facts[].found_in` field and renames location
-`findables` to `search_reveals`. A physical-search source is now declared once,
-on the location rule that contains the trigger and narration guidance.
-
-Version 5 uses “learned” consistently for facts in player state. Fact display
-text is `journal_text`; the condition is `fact_learned`; state stores
-`facts_learned`; results return structured `{id, journal_text}` additions.
-
-Version 6 removes pre-release relationship aliases and clarifies shared
-knowledge: `default_track`, `adjust_track`, `summary`, `shared_knowledge`, and
-`knowledge_scopes` replace their ambiguous predecessors. Item `short`,
-character `pressure`, reply-side `mood_shift`, and `deltas.disposition` are gone.
-Runtime vocabulary is also explicit: classifier model settings and prompt,
-plural `attitudes` adjudication, `story_relevance`, `fruitless_turns`, and
-`hints.after_turns` replace their narrower or opaque predecessors.
+is the contract; a second engine could be built against it. Every pack declares
+the current schema identifier, `darps_spec: 6`. ("Conversation" is meant
+loosely: talking to a character, but also examining an item or a place —
+anything narrated.)
 
 **Design invariant:** every gate in a pack is expressed in the closed
 condition vocabulary (§6). No pack contains code. This is what makes packs
@@ -61,7 +41,7 @@ my-pack/
 ## 2. pack.yaml — the manifest
 
 ```yaml
-darps_spec: 6                 # spec version this pack targets
+darps_spec: 6                 # required current pack-schema identifier
 name: Ashworth Manor          # display name; keys the dev harness save file
 author: you
 player_label: "the detective" # how prompts refer to the player character
@@ -102,9 +82,9 @@ the whole session, is judged from both talk and examine inputs, and never
 enters character or narrator response prompts. Bounds/default/speed are
 numeric, speed is positive, and guidance is required for each dimension.
 
-That is the whole manifest. Intents, goals, item actions, and hint thresholds
-were spec-1 concepts: verbs and progress belong to the host game, and pacing
-severity is host **config**, not pack content (§13).
+That is the whole manifest. Verbs, goals, item actions, and progress belong to
+the host game. Hint thresholds and pacing severity are host **config**, not
+pack content (§13).
 
 ## 3. vars.yaml — ground truth
 
@@ -208,10 +188,10 @@ track_prose:                  # engine state -> performed attitudes;
 
 Numbers stay in the engine; characters perform the prose. LLM contexts never
 see raw track values. Values may be fractional. Omitted `start` uses the
-manifest default; omitted `speed` uses `1.0` for backward compatibility.
+manifest default; omitted `speed` uses `1.0`.
 Track `guidance` in `pack.yaml` defines the shared baseline. Character-level
 `guidance` is optional and supplements rather than replaces that baseline;
-use it only for exceptions or character-specific sensitivities. Legacy
+use it only for exceptions or character-specific sensitivities.
 
 ## 5½. `shared_knowledge:` — what others know about an entity
 
@@ -281,6 +261,8 @@ revealed by an about entry only on turns where that entry was actually
 pulled — subject relevant, scope held, gates passed. Context and authority
 cannot disagree.
 
+## 6. Conditions
+
 Used in `knowledge[].when`, `shared_knowledge[].when` (§5½ — `self` = subject
 entity), `facts[].conditions`, and `examine_reveals[].conditions`.
 
@@ -340,9 +322,10 @@ examine_reveals:                   # examining it may surface facts,
     conditions: []                 # optional extra §6 conditions
 ```
 
-The `{flag: ...}` pattern replaces spec-1 item mechanics: when the host's
-world changes (a cabinet gets opened, however the game does that), the host
-sets a flag, and gated `examine_reveals`/knowledge respond.
+The `{flag: ...}` pattern connects host-owned world progress to narrative
+knowledge: when the world changes (a cabinet gets opened, however the game
+does that), the host sets a flag, and gated `examine_reveals`/knowledge
+respond.
 
 ## 9. player.yaml — the protagonist
 
@@ -370,8 +353,9 @@ unknown tracks, clamps each shift, multiplies it by that character's
 uses every projection for the current reply and gates. Values commit only
 after generation completes. The call sees player text, tone, recent player
 messages, already-found evidence, and each track's authored `guidance`;
-never hidden knowledge, ground-truth vars, or the generated response. For old
-overrides must return `shifts`; omitted or malformed maps produce zero changes.
+never hidden knowledge, ground-truth vars, or the generated response. Attitude
+prompt overrides must return `shifts`; omitted or malformed maps
+produce zero changes.
 
 Narrator responses: `reveals` (only ids the engine pre-authorized that turn)
 and `story_relevance`.
@@ -540,11 +524,11 @@ plus narrative memory: `turn`, `facts_learned`, `tracks`, `canon`,
 per-character `conversations`, `fruitless_turns`, session-level `persona`, and
 `persona_history`. `pack_id` is the normalized pack name. It is the save file;
 hosts round-trip it via `/state` or store it themselves. Restore rejects a
-different pack/spec/state version and unknown entity ids; missing narrative
+mismatch in the identity metadata or unknown entity ids; missing narrative
 fields receive defaults, while restored track/persona numbers are clamped to
-their current bounds. With `canon: false`, the
-`canon` field remains for save compatibility but is neither read into prompts
-nor extended; this also prevents old canon in a loaded save from influencing play.
+their current bounds. With `canon: false`, the `canon` field remains in the
+state shape but is neither read into prompts nor extended; saved canon cannot
+influence play while the mechanic is disabled.
 
 ## 14. The HTTP server
 

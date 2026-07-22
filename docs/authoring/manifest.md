@@ -9,7 +9,7 @@ optional player-persona dimensions.
 
 | Field | Required | Purpose |
 |---|---:|---|
-| `darps_spec` | Yes | Pack contract version accepted by the engine |
+| `darps_spec` | Yes | Current pack-schema identifier; use `6` |
 | `name` | Yes | Display name and basis of the state `pack_id` |
 | `start_location` | Yes | Fallback location when the host omits one |
 | `author` | No | Attribution |
