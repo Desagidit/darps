@@ -7,7 +7,9 @@
 - id: late_delivery
   requires: [altered_ledger]
   conditions:
-    - {track_gte: {track: disposition, value: 1}}
+  - track_gte:
+      track: disposition
+      value: 1
   journal_text: >-
     Mira admits the missing clock arrived after closing, and she hid that fact
     because accepting it violated the workshop's insurance rules.

@@ -10,11 +10,15 @@ which items are accessible on every call.
 | Field | Purpose |
 |---|---|
 | `id`, `name` | Stable identity and display name |
-| `aliases`, `triggers` | Deterministic target matching |
+| `aliases` | Complete deterministic target-matching vocabulary |
 | `description` | Ground truth used when the object is examined |
 | `shared_knowledge` | What characters know about the object |
 | `examine_reveals` | Facts this item may reveal when examined |
 | `hints` | `false` prevents item-targeted hints |
+
+Put every term that should identify the item in `aliases`, including alternate
+names, component words, and colloquial references. Location
+`search_reveals[].triggers` are different: they gate a particular discovery.
 
 ```yaml
 examine_reveals:

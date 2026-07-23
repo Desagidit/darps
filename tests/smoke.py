@@ -520,7 +520,8 @@ legacy_mara.write_text(legacy_mara.read_text(encoding="utf-8").replace(
     "\nknows: [village]\npressure: legacy text\n", encoding="utf-8")
 legacy_item = legacy_sources / "items" / "house_key.yaml"
 legacy_item.write_text(legacy_item.read_text(encoding="utf-8") +
-                       "\nshort: unused legacy text\n", encoding="utf-8")
+                       "\nshort: unused legacy text\ntriggers: [old item term]\n",
+                       encoding="utf-8")
 errs, _ = lint_mod.lint(Pack(legacy_sources))
 assert any("'discloses' was removed in spec 3" in e for e in errs), errs
 assert any("findable 'fact' was removed in spec 3" in e for e in errs), errs
@@ -534,6 +535,7 @@ assert any("'knows' was renamed in spec 6" in e for e in errs), errs
 assert any("'short' was renamed in spec 6" in e for e in errs), errs
 assert any("'pressure' was removed in spec 6" in e for e in errs), errs
 assert any("unused 'short' was removed in spec 6" in e for e in errs), errs
+assert any("top-level 'triggers' was removed" in e for e in errs), errs
 # a fact revealed ONLY via an about entry counts as sourced
 mara_f = badp / "characters" / "mara.yaml"
 mara_f.write_text(mara_f.read_text(encoding="utf-8")
@@ -996,5 +998,13 @@ for invalid_world in ({"carried": ["notebook"]},
     except ValueError:
         pass
 
+# 35) ITEMS HAVE ONE MATCHING VOCABULARY. All loose target terms live in
+#     aliases; removed top-level triggers are ignored by runtime matching.
+assert match_item("inspect the dregs", {
+    "brandy_glass": pack.items()["brandy_glass"]}) == "brandy_glass"
+assert match_item("inspect the obsolete term", {
+    "test_item": {"id": "test_item", "name": "a test item",
+                  "triggers": ["obsolete term"]}}) is None
+
 assert not REPLIES, f"unconsumed stub replies: {REPLIES}"
-print("ALL DARPS SMOKE TESTS PASSED (34 groups)")
+print("ALL DARPS SMOKE TESTS PASSED (35 groups)")

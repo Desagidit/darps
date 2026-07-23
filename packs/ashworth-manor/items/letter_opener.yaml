@@ -1,7 +1,6 @@
 id: letter_opener
 name: the letter opener
-triggers: [opener, letter opener, blade, paper knife]
-aliases: [letter knife, desk knife]
+aliases: [opener, letter opener, blade, paper knife, letter knife, desk knife]
 description: >
   Slim steel with a horn handle, part of the desk set. Sturdy enough to
   pry with, if one didn't mind the scratches.

@@ -81,7 +81,7 @@ HOST GAME, not the pack.
   response prompts; the host queries it for rewards or analytics. Do not put
   NPC feelings in persona or player-performance judgments in tracks.
 - **Items are describable entities**, nothing more: name/description ground
-  truth, `triggers`/`aliases` for noun matching, optional gated
+  truth, `aliases` for all noun matching, optional gated
   `examine_reveals`. The host declares what's in the scene per call; DARPS
   never moves or holds anything.
 - **Aliases everywhere.** Characters, items, and locations take `aliases:`
@@ -100,7 +100,7 @@ HOST GAME, not the pack.
 - The culprit-equivalent's `when`-gated block must specify: how they lie,
   what they deflect toward, and exactly what evidence combination cracks
   them.
-- Search-reveal `triggers` and item `triggers`/`aliases` should cover synonyms a player
+- Search-reveal `triggers` and item `aliases` should cover synonyms a player
   would actually type (desk/drawer/papers; railing/banister).
 - Solvability floor: testimony-gated facts need a plausible path to the
   track threshold; check the track and character guidance explain how trust

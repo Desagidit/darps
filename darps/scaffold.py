@@ -97,8 +97,7 @@ description: >
 # moves or tracks items — the host owns the world.
 id: house_key
 name: the solicitor's key
-triggers: [key, iron key, solicitor]
-aliases: [house key, the key]        # alternate names a player might use
+aliases: [key, iron key, solicitor, house key, the key] # matching vocabulary
 description: >
   Old iron, older wards. The tag reads only the house's name.
 # examine_reveals: [{reveals: some_fact}] # examining it may surface facts,

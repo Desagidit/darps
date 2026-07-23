@@ -315,8 +315,7 @@ examined or asserted in prose.
 ```yaml
 id: brandy_glass
 name: the brandy glass
-triggers: [glass, brandy, dregs]   # nouns for deterministic matching
-aliases: [snifter]                 # alternate names (see §12)
+aliases: [glass, brandy, dregs, snifter] # all deterministic matching terms
 shared_knowledge: []               # OPTIONAL: what characters KNOW about it,
                                    #   by scope (§5½) — coarser than examining
 description: "..."                 # ground truth for examination narration
@@ -382,10 +381,11 @@ template origin.
 Characters, items, and locations may each carry an optional `aliases:` list of
 alternate names — the terms a player is likely to reach for instead of the
 canonical `name` ("Lady Ashworth" / "Constance" / "her Ladyship" all mean the
-widow; a "desk" may be the item you called a table). Item aliases join
-`triggers`/`name`/id in the deterministic matcher that resolves `examine`
+widow; "snifter" / "dregs" may both identify the brandy glass). Item aliases
+join `name` and id in the deterministic matcher that resolves `examine`
 targets (longest term wins). Aliases are display strings only — never secret,
-never gated, and optional.
+never gated, and optional. Top-level item `triggers` do not exist; discovery-
+specific `search_reveals[].triggers` remain a separate location-search gate.
 
 ## 13. The runtime API
 
@@ -396,7 +396,7 @@ structurally impossible.
 ```python
 Game.talk(character_id, message, *, world=None, tone=None) -> result
 Game.examine(target, message="", *, world=None, tone=None) -> result
-     # target: an item id, or a loose noun resolved via aliases/triggers
+     # target: an item id, or a loose noun resolved via aliases
 ```
 
 Three host-authority writes complete the surface — no LLM call, no world

@@ -92,7 +92,7 @@ character is not permitted to know.
 
 From the safe corpus, DARPS always includes entries about the addressee, the
 current location, and accessible items. It also matches subject names, aliases,
-triggers, and meaningful words in entry content against the player's message.
+and meaningful words in entry content against the player's message.
 Consequently, asking Alice "Who makes the cocoa?" can retrieve Halloway's
 household entry even when Halloway is absent and unnamed.
 

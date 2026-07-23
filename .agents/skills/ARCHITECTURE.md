@@ -193,8 +193,8 @@ An item file is ground truth for narration plus optional gated
 `examine_reveals`. The host declares per call which items are in the scene
 (`world.accessible_items`); only those can be examined, and prompts
 instruct models not to assert objects the scene doesn't establish. If the
-host declares no scene, item narration stays non-committal. Aliases +
-triggers resolve loose nouns ("the snifter") deterministically.
+host declares no scene, item narration stays non-committal. Aliases resolve
+loose nouns ("the snifter", "dregs") deterministically.
 
 ## Pacing model (simplified)
 

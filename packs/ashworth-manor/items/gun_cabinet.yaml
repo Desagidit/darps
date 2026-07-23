@@ -1,6 +1,6 @@
 id: gun_cabinet
 name: the gun cabinet
-triggers: [cabinet, gun cabinet, gun case, lock, oak cabinet]
+aliases: [cabinet, gun cabinet, gun case, lock, oak cabinet]
 description: >
   Oak, glass-fronted, and locked. The key went with the constable's list;
   the police will bring it at dawn.

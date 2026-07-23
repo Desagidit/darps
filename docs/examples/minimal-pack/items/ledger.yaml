@@ -1,7 +1,6 @@
 id: ledger
 name: the delivery ledger
-aliases: [record book, delivery book]
-triggers: [ledger, book, records, entries]
+aliases: [ledger, book, records, entries, record book, delivery book]
 description: >-
   A cloth-bound ledger ruled into date, sender, object, and arrival-time
   columns. Tuesday's final time has been overwritten in darker ink.

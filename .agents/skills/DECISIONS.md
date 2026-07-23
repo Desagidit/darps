@@ -323,3 +323,16 @@ ground truth is not automatically something characters know.
 memory, and DARPS does not implement multi-character dialogue. A future group
 conversation feature should introduce explicit participants with defined
 speaking semantics rather than overload a world snapshot field.
+
+## D22. One item-matching vocabulary
+Top-level item `triggers` and `aliases` fed the same matcher, so authors had to
+guess whether words such as "dregs" were a trigger or an alias despite no
+runtime distinction. Items now use `aliases` as their complete matching
+vocabulary alongside name and id. The safe `/pack` metadata already exposes
+aliases, so hosts and DARPS share the same terms.
+
+Location `search_reveals[].triggers` remain. They do not identify an entity;
+they authorize a particular discovery when the player's examination mentions
+the relevant part or action. Reconsider only if examine rules gain their own
+explicit action vocabulary, in which case name it for that purpose rather than
+reintroducing a second item-name list.

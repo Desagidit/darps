@@ -1,8 +1,9 @@
 # Glossary
 
 **Alias**
-: A player-facing alternate name for a character, location, or item. Aliases
-  support deterministic matching and shared-knowledge relevance.
+: A player-facing matching term for a character, location, or item. For items,
+  this complete vocabulary may include alternate names, components, and related
+  nouns. Aliases support deterministic matching and shared-knowledge relevance.
 
 **Attitude adjudication**
 : A secret-free classifier pass that judges how the current player message

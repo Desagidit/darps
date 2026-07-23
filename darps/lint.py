@@ -236,6 +236,9 @@ def lint(pack: Pack) -> tuple[list[str], list[str]]:
     # ------------------------------------------------------------- items
     for iid, item in items.items():
         _lint_aliases(item, f"items/{iid}", errors)
+        if "triggers" in item:
+            errors.append(f"items/{iid}: top-level 'triggers' was removed; merge "
+                          "those item-matching terms into 'aliases'")
         if "short" in item:
             errors.append(f"items/{iid}: unused 'short' was removed in spec 6")
         for old in _REMOVED_ITEM:
@@ -253,9 +256,6 @@ def lint(pack: Pack) -> tuple[list[str], list[str]]:
             for cond in er.get("conditions", []) or []:
                 _lint_condition(cond, f"items/{iid}", game_vars, facts, tracks,
                                 errors, allow_self=False)
-        if not item.get("triggers"):
-            warnings.append(f"items/{iid}: no triggers — matching falls back "
-                            f"to the item's name only")
     if player.get("inventory"):
         warnings.append("player.yaml: 'inventory' was removed in spec 2 and is "
                         "ignored (the host declares accessible items per call)")

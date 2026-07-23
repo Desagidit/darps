@@ -30,7 +30,7 @@
 - Do not rely exclusively on a relationship gate if alienating one character
   would permanently block the host story.
 - Validate after every edit and take unreachable-fact warnings seriously.
-- Test the exact player vocabulary used by search triggers and aliases.
+- Test the exact player vocabulary used by location search triggers and item aliases.
 
 ## Keep the boundary clean
 

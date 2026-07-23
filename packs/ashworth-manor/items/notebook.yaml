@@ -1,6 +1,6 @@
 id: notebook
 name: your pocket notebook
-triggers: [notebook, notes, pencil, jotter]
+aliases: [notebook, notes, pencil, jotter]
 description: >
   Soft black leather, elastic band, a pencil stub in the loop. Half the
   pages are filled with old cases in your cramped shorthand.

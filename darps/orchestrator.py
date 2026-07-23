@@ -678,7 +678,7 @@ class Game:
 
     def _resolve_item(self, target: str, message: str, view: dict):
         """Alias resolution: exact id first, then deterministic matching over
-        triggers/aliases/name. When the host supplies accessible_items, only
+        aliases/name/id. When the host supplies accessible_items, only
         those items are candidates; if omitted (dev harness), every pack item
         remains available."""
         items = self.pack.items()

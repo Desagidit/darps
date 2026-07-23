@@ -135,7 +135,6 @@ class Pack:
             document = " ".join([
                 str(name), str(eid).replace("_", " "),
                 " ".join(map(str, entity.get("aliases", []) or [])),
-                " ".join(map(str, entity.get("triggers", []) or [])),
                 str(entry.get("content", "")),
             ])
             if (eid in immediate or eid in mentioned or index in selected
@@ -215,7 +214,7 @@ def _knowledge_terms(text: str) -> set[str]:
 
 
 def match_entities(text: str, entities: dict) -> set:
-    """All entity ids whose name/aliases/triggers appear in `text` — the
+    """All entity ids whose name/aliases appear in `text` — the
     deterministic MENTION detector for about-entry relevance. Collect-all
     sibling of match_item (which picks one best). No LLM: a nickname the
     alias list doesn't cover degrades to 'not brought up', never to a wrong
@@ -224,21 +223,21 @@ def match_entities(text: str, entities: dict) -> set:
     found = set()
     for eid, entity in entities.items():
         terms = ([entity.get("name", "")] + list(entity.get("aliases", []))
-                 + list(entity.get("triggers", [])) + [eid.replace("_", " ")])
+                 + [eid.replace("_", " ")])
         if any(t and t.strip().lower() in hay for t in map(str, terms)):
             found.add(eid)
     return found
 
 
 def match_item(text: str, candidates: dict) -> str | None:
-    """Deterministic noun -> item id matching over triggers + aliases + name
+    """Deterministic noun -> item id matching over aliases + name
     words. `candidates` is {item_id: item_dict}; longest-term match wins so
     'letter opener' beats 'letter'. Aliases let an informal word the player
     reaches for ('desk' for a table) resolve to the canonical instance."""
     hay = (text or "").lower()
     best, best_len = None, 0
     for iid, item in candidates.items():
-        terms = (list(item.get("triggers", [])) + list(item.get("aliases", []))
+        terms = (list(item.get("aliases", []))
                  + [item.get("name", "").lower(), iid.replace("_", " ")])
         for t in terms:
             t = t.strip().lower()
