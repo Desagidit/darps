@@ -16,7 +16,7 @@ Write track prose at and below `-1`, then explain in guidance what earns trust.
 1. Declare the fact and journal text.
 2. Add `reveals: fact_id` to the speaker's knowledge.
 3. Add `why` and `tell`.
-4. Add fact prerequisites or conditions.
+4. Add fact prerequisites or `when` gates.
 5. Validate and test below/above every threshold.
 
 ## Expire a lie with a flag
@@ -74,7 +74,8 @@ These calls make no model request.
 ## Debug unexpected dialogue
 
 1. Open the latest matching entry in `logs/calls.jsonl`.
-2. Identify its tag: `classifier`, `attitudes:<id>`, `persona`,
+2. Identify its tag: `classifier`, `knowledge:<id>`,
+   `examine:<entity_id>`, `attitudes:<id>`, `persona`,
    `character:<id>`, or `narrator`.
 3. Check whether the prompt contained the required data and excluded secrets.
 4. Classify the failure as content, prompt contract, or deterministic engine

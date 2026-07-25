@@ -32,6 +32,9 @@ Supply a fresh world snapshot with response calls:
 All keys are optional. The snapshot lasts for one call and is never persisted.
 If `accessible_items` is provided, it limits which pack items DARPS may
 describe or examine. Supply an empty list when no pack items are available.
+A known excluded item is rejected. Unknown examination targets are treated as
+parts of the current location by default; enable `strict_items` in
+`config.yaml` to reject those too.
 
 ## Host-authority writes
 

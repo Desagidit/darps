@@ -331,8 +331,62 @@ runtime distinction. Items now use `aliases` as their complete matching
 vocabulary alongside name and id. The safe `/pack` metadata already exposes
 aliases, so hosts and DARPS share the same terms.
 
-Location `search_reveals[].triggers` remain. They do not identify an entity;
-they authorize a particular discovery when the player's examination mentions
-the relevant part or action. Reconsider only if examine rules gain their own
-explicit action vocabulary, in which case name it for that purpose rather than
-reintroducing a second item-name list.
+`examine_reveals[].triggers` do not identify an entity. On either a location
+or item, they optionally authorize a particular discovery only when the
+player's examination mentions the relevant part or action. Entity aliases and
+discovery triggers therefore remain distinct.
+
+## D23. One conditional field: `when`
+
+The pack schema once used `when` for knowledge inclusion but `conditions` for
+fact and examination gates, even though all three called the same closed
+condition evaluator. The distinction described execution phase, not a useful
+authoring concept, and forced authors to remember two names for the same
+question: "under what circumstances is this active?"
+
+Every conditional list is now named `when`, including source-specific gates
+on `examine_reveals`. Optional discovery `triggers` remain a separate textual
+authorization check: they answer what detail the player examined, while
+`when` answers whether that route is active. Facts retain `requires` as a
+separate structural fact-dependency graph because the linter uses it for cycle
+detection and reachability, and because prerequisites are meaningfully
+different from temporary flags, tracks, and variant state. The removed
+`conditions` field is rejected rather than aliased: DARPS is prerelease and
+maintains one current contract.
+
+## D24. One examination schema; configurable unknown-target strictness
+
+Locations and items are both describable entities, so both use
+`examine_reveals` with the same fields: required `reveals`, optional
+`triggers`, optional `when`, and optional hint prose in `where`. Missing
+triggers mean general examination is enough. The engine resolves exactly one
+entity before authorizing discoveries, preventing an item examination from
+also searching the whole room.
+
+The host's explicit world claims remain authoritative: a known pack item
+excluded from `world.accessible_items`, or a known non-current location, is
+always rejected. Unknown nouns are different because they may describe an
+unmodeled part of the current location. With the default `strict_items:
+false`, DARPS treats them that way; `strict_items: true` rejects them unless
+the target resolves to an accessible item or the current location. This gives
+simulation-heavy hosts strict physical validation without forcing every pack
+to model every drawer and patch of floor as an item.
+
+## D25. Optional semantic examination retrieval, deterministic floor
+
+Authored trigger lists are reliable but cannot economically enumerate every
+paraphrase ("sniff what remains" versus `smell`/`dregs`). Reusing the general
+input classifier's topic words made semantic matching accidental rather than
+contractual. Optional `examine_resolver: true` therefore adds a dedicated
+classifier call analogous to `knowledge_resolver`.
+
+The target and accessibility are resolved first. Source and linked-fact gates
+then remove ineligible rules. The resolver sees only the current entity's
+remaining unmatched trigger groups, with no fact ids, journal text, inactive
+rules, other entities, vars, or knowledge, and returns local candidate
+indexes. The engine range-checks them and unions them with deterministic
+matches; it never lets the resolver remove a direct match or bypass a gate.
+Triggerless rules need no semantic judgment, and calls are skipped when no
+unmatched candidates remain. This preserves D1/D2/D9 while allowing natural
+examination language at the same optional one-classifier-call cost profile as
+semantic knowledge retrieval.

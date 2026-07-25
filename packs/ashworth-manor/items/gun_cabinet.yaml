@@ -16,5 +16,5 @@ shared_knowledge:
 # Only then can examining it surface what is inside.
 examine_reveals:
   - reveals: cabinet_contents
-    conditions:
+    when:
       - {flag: cabinet_open}

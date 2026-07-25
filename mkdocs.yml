@@ -62,7 +62,7 @@ markdown_extensions:
           format: !!python/name:pymdownx.superfences.fence_code_format
 
 nav:
-  - Home: index.md
+  - Intro: index.md
   - Setup:
       - Overview: setup/index.md
       - Create a Pack: setup/first-pack.md
@@ -71,6 +71,7 @@ nav:
   - Concepts:
       - Mental Model: concepts/index.md
       - Knowledge: concepts/knowledge.md
+      - Gates: concepts/gates.md
       - State and Saves: concepts/state-saves.md
       - Glossary: concepts/glossary.md
   - Pack Authoring:
@@ -79,8 +80,8 @@ nav:
       - Characters: authoring/characters.md
       - Locations: authoring/locations.md
       - Items: authoring/items.md
-      - Facts and Knowledge: authoring/facts-knowledge.md
-      - Conditions: authoring/conditions.md
+      - Facts and Journal: authoring/facts.md
+      - When gates: authoring/when.md
       - Best Practices: authoring/best-practices.md
       - Recipes: authoring/recipes.md
       - Pack Reference: authoring/pack-specification.md

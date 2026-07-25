@@ -36,12 +36,15 @@ sequenceDiagram
 sequenceDiagram
     participant H as Host
     participant D as DARPS
+    participant C as Classifier model
     participant N as Narrator model
     participant V as Validator
 
     H->>D: examine(target, message, world)
     D->>D: resolve reachable item / current location
-    D->>D: match triggers and evaluate gates
+    D->>D: evaluate source + fact gates; match exact triggers
+    D->>C: optional semantic match over eligible trigger groups
+    C-->>D: validated relevant rule indexes
     D->>D: build authorized discovery set
     D->>N: narrator prompt + authorization
     N-->>D: prose + proposed events

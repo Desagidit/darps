@@ -14,7 +14,7 @@
 # entry in characters/butler.yaml — no revealed_by field.
 - id: overheard_quarrel
   requires: []
-  conditions:
+  when:
   - track_gte:
       track: disposition
       value: 1

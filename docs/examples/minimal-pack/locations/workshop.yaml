@@ -10,7 +10,7 @@ scenery: >-
 shared_knowledge:
   - scope: workshop
     content: Deliveries are recorded in the ledger beside the main bench.
-search_reveals:
+examine_reveals:
   - reveals: altered_ledger
     where: the delivery ledger beside the main bench
     triggers: [ledger, book, deliveries, ink, entry]

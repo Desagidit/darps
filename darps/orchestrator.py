@@ -124,13 +124,14 @@ class Game:
 
     def examine(self, target: str, message: str = "", *,
                 world: dict | None = None, tone: str | None = None) -> dict:
-        """Narration/inspection — 'conversation' with the world. `target` may
-        be an exact item id or a loose noun ('the desk'); aliases resolve it."""
+        """Narration/inspection — 'conversation' with one resolved entity."""
         manifest = self.pack.manifest()
         message = message or f"examine {target}"
+        view = self._view(world, manifest)
+        loc = self.pack.location(view["location"])
+        self._resolve_examine_target(target, loc, view)  # fail before state/LLM work
         self.state["turn"] += 1
         before = self._snapshot()
-        view = self._view(world, manifest)
         reading = self._classify_input(message, manifest, tone)
         persona = self._assess_persona(message, reading.get("tone", "neutral"), "examine")
         if reading.get("meta"):
@@ -146,9 +147,11 @@ class Game:
         """Streaming twin of examine(): prose chunks followed by one done event."""
         manifest = self.pack.manifest()
         message = message or f"examine {target}"
+        view = self._view(world, manifest)
+        loc = self.pack.location(view["location"])
+        self._resolve_examine_target(target, loc, view)  # fail before state/LLM work
         self.state["turn"] += 1
         before = self._snapshot()
-        view = self._view(world, manifest)
         reading = self._classify_input(message, manifest, tone)
         persona = self._assess_persona(message, reading.get("tone", "neutral"), "examine")
         if reading.get("meta"):
@@ -409,6 +412,35 @@ class Game:
                 if isinstance(i, int) and not isinstance(i, bool)
                 and 0 <= i < len(corpus)]
 
+    def _resolve_examine_triggers(self, entity: dict, target: str,
+                                  message: str, candidates: list) -> set[int]:
+        """Optionally add semantic matches from currently eligible rules.
+
+        `candidates` contains (original_rule_index, trigger_list) pairs. The
+        classifier sees no fact ids, journal text, inactive rules, or other
+        entities; returned local indexes are translated and range-checked.
+        """
+        if not self.cfg.get("examine_resolver", False) or not candidates:
+            return set()
+        rendered = "\n".join(
+            f"- {local_index}: {', '.join(map(str, triggers))}"
+            for local_index, (_, triggers) in enumerate(candidates)
+        )
+        prompt = self.pack.prompt(
+            "examine", target=entity.get("name", entity.get("id", target)),
+            player_text=message, candidates=rendered)
+        raw = llm.call(
+            self.cfg, prompt, tag=f"examine:{entity.get('id', 'location')}",
+            classifier=True)
+        indexes = (llm.extract_json(raw) or {}).get("relevant", [])
+        if not isinstance(indexes, list):
+            return set()
+        return {
+            candidates[i][0] for i in indexes
+            if isinstance(i, int) and not isinstance(i, bool)
+            and 0 <= i < len(candidates)
+        }
+
     def _meta(self, manifest: dict, reading: dict) -> dict:
         return {"speaker": None,
                 "prose": manifest.get("meta_response",
@@ -631,9 +663,10 @@ class Game:
         facts = self.pack.facts()
         game_vars = self.pack.vars()
 
-        item_id, item = self._resolve_item(target, message, view)
-        authorized = self._authorized_discoveries(target, message, reading,
-                                                  loc, item_id, item, facts, view)
+        entity_id, examined, is_item = self._resolve_examine_target(
+            target, loc, view)
+        authorized = self._authorized_discoveries(
+            target, message, reading, examined, facts, view)
         if authorized:
             lines = "\n".join(
                 f"- You MAY have {manifest.get('player_label','the player')} find fact "
@@ -648,9 +681,10 @@ class Game:
 
         loc_doc = (f"{loc['name']}: {loc['description']}\nScenery you may improvise "
                    f"around: {loc.get('scenery', '')}")
-        if item is not None:
+        if is_item:
             loc_doc += (f"\nThe examined object (ground truth): "
-                        f"{item.get('name', item_id)} — {item.get('description', '')}")
+                        f"{examined.get('name', entity_id)} — "
+                        f"{examined.get('description', '')}")
 
         prompt = self.pack.prompt(
             "narrator",
@@ -664,7 +698,8 @@ class Game:
             tone=reading.get("tone", "neutral"),
             impossible=bool(reading.get("impossible", False)),
             discovery_instruction=discovery,
-            hint_instruction=self._narrator_hint(loc, facts, game_vars, view),
+            hint_instruction=self._narrator_hint(
+                examined, facts, game_vars, view),
         )
         return {"prompt": prompt, "authorized": authorized, "facts": facts}
 
@@ -676,48 +711,89 @@ class Game:
                 "tone": reading.get("tone", "neutral"),
                 "story_relevance": events["story_relevance"]}
 
-    def _resolve_item(self, target: str, message: str, view: dict):
-        """Alias resolution: exact id first, then deterministic matching over
-        aliases/name/id. When the host supplies accessible_items, only
-        those items are candidates; if omitted (dev harness), every pack item
-        remains available."""
-        items = self.pack.items()
+    def _resolve_examine_target(self, target: str, loc: dict, view: dict):
+        """Resolve one authoritative examination target.
+
+        Accessible pack items win. A known but excluded item or known
+        non-current location fails deterministically. Otherwise permissive
+        mode treats a loose noun as part of the current location; with
+        `strict_items: true`, that final fallback is disabled.
+        """
+        all_items = self.pack.items()
+        items = all_items
         if view.get("_accessible_items_given"):
             accessible = set(view["_accessible_items"])
             items = {i: it for i, it in items.items() if i in accessible}
         if target in items:
-            return target, items[target]
-        iid = content.match_item(f"{target} {message}", items)
-        return (iid, items[iid]) if iid else (None, None)
+            return target, items[target], True
+        iid = content.match_item(target, items)
+        if iid:
+            return iid, items[iid], True
 
-    def _authorized_discoveries(self, target, message, reading, loc,
-                                item_id, item, facts, view) -> list[str]:
-        """Engine-side matching of an examination against location search reveals and item
-        examine_reveals, gated by the fact web. The LLM never decides this."""
+        global_iid = (target if target in all_items
+                      else content.match_item(target, all_items))
+        if global_iid:
+            raise ValueError(
+                f"item '{global_iid}' is not accessible in this interaction")
+
+        loc_id = loc["id"]
+        if target == loc_id or loc_id in content.match_entities(
+                target, {loc_id: loc}):
+            return loc_id, loc, False
+        all_locations = {
+            lid: self.pack.location(lid) for lid in self.pack.location_ids()}
+        other_locations = content.match_entities(target, all_locations)
+        if other_locations:
+            named = sorted(other_locations)[0]
+            raise ValueError(
+                f"location '{named}' is not the current location '{loc_id}'")
+        if self.cfg.get("strict_items", False):
+            raise ValueError(
+                f"target {target!r} is not an accessible item or the current "
+                f"location '{loc_id}'")
+        return loc_id, loc, False
+
+    def _authorized_discoveries(self, target, message, reading, entity,
+                                facts, view) -> list[str]:
+        """Authorize discoveries from the one resolved location or item.
+
+        Both entity types use identical `examine_reveals` entries. Missing
+        triggers means general examination is sufficient; present triggers
+        require a direct match or an optional resolver proposal. The engine
+        validates every proposal and remains the authorization authority.
+        """
         if reading.get("impossible"):
             return []
         gate_kw = self._gate_kw(view)
-        haystack = " ".join([target.lower(), message.lower(),
-                             " ".join(reading.get("topics") or []).lower()])
+        haystack = " ".join([target.lower(), message.lower()])
         approved = []
-        for f in loc.get("search_reveals", []):
-            fact = facts.get(f["reveals"])
-            if fact and any(t in haystack for t in f.get("triggers", [])):
-                if validate.fact_reveal_allowed(fact, state=view,
-                                                game_vars=gate_kw["vars"],
-                                                manifest=gate_kw["manifest"],
-                                                tracks_enabled=gate_kw["tracks_enabled"]):
+        eligible = []
+        semantic_candidates = []
+        for rule_index, rule in enumerate(
+                entity.get("examine_reveals", []) or []):
+            triggers = rule.get("triggers", []) or []
+            trigger_match = not triggers or any(
+                str(trigger).lower() in haystack for trigger in triggers)
+            fact = facts.get(rule["reveals"])
+            if not fact \
+                    or not conditions.all_hold(rule.get("when"), **gate_kw) \
+                    or not validate.fact_reveal_allowed(
+                        fact, state=view, game_vars=gate_kw["vars"],
+                        manifest=gate_kw["manifest"],
+                        tracks_enabled=gate_kw["tracks_enabled"]):
+                continue
+            eligible.append((rule_index, fact))
+            if trigger_match:
+                if fact["id"] not in approved:
                     approved.append(fact["id"])
-        if item is not None:
-            for er in item.get("examine_reveals", []) or []:
-                fact = facts.get(er["reveals"])
-                if fact and fact["id"] not in approved \
-                        and conditions.all_hold(er.get("conditions"), **gate_kw) \
-                        and validate.fact_reveal_allowed(
-                            fact, state=view, game_vars=gate_kw["vars"],
-                            manifest=gate_kw["manifest"],
-                            tracks_enabled=gate_kw["tracks_enabled"]):
-                    approved.append(fact["id"])
+            elif triggers:
+                semantic_candidates.append((rule_index, triggers))
+
+        semantic_matches = self._resolve_examine_triggers(
+            entity, target, message, semantic_candidates)
+        for rule_index, fact in eligible:
+            if rule_index in semantic_matches and fact["id"] not in approved:
+                approved.append(fact["id"])
         return approved
 
     # ----------------------------------------------------------------- hints
@@ -763,18 +839,20 @@ class Game:
                 "gives any plausible opening, your character relents: you may "
                 "volunteer what you have been holding back, in your own manner."), 1
 
-    def _narrator_hint(self, loc, facts, game_vars, view) -> str:
+    def _narrator_hint(self, entity, facts, game_vars, view) -> str:
         h = self._hint_cfg()
-        if h is None or loc.get("hints", True) is False:
+        if h is None or entity.get("hints", True) is False:
             return ""
         found = None
-        for f in loc.get("search_reveals", []):
-            fact = facts.get(f["fact"])
-            if fact and validate.fact_reveal_allowed(
+        gate_kw = self._gate_kw(view)
+        for rule in entity.get("examine_reveals", []) or []:
+            fact = facts.get(rule["reveals"])
+            if fact and conditions.all_hold(rule.get("when"), **gate_kw) \
+                    and validate.fact_reveal_allowed(
                     fact, state=view, game_vars=game_vars,
                     manifest=self.pack.manifest(),
                     tracks_enabled=self._tracks_on()):
-                found = f
+                found = rule
                 break
         if found is None:
             return ""

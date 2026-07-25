@@ -40,7 +40,7 @@ def filter_persona_shifts(events: dict, allowed: set[str]) -> dict[str, int]:
 def fact_reveal_allowed(fact: dict, *, state: dict, game_vars: dict, manifest: dict,
                         via_character: str | None = None, track_slack: int = 0,
                         tracks_enabled: bool = True) -> bool:
-    """Central gating: prerequisites + conditions. Testimony SOURCE authority
+    """Central gating: prerequisites + `when`. Testimony SOURCE authority
     is the caller's job (membership in the character's revealable set — what
     their assembled briefing actually reveals); `via_character` here only
     supplies `self` for condition evaluation."""
@@ -50,7 +50,7 @@ def fact_reveal_allowed(fact: dict, *, state: dict, game_vars: dict, manifest: d
         if req not in state["facts_learned"]:
             return False
     return conditions.all_hold(
-        fact.get("conditions"), vars=game_vars, state=state, manifest=manifest,
+        fact.get("when"), vars=game_vars, state=state, manifest=manifest,
         self_id=via_character, track_slack=track_slack,
         tracks_enabled=tracks_enabled,
     )

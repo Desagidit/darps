@@ -5,7 +5,7 @@ DARPS divides responsibility deliberately:
 | Owner | Responsible for |
 |---|---|
 | Host game | Location, character placement, inventory, quests, progress flags, save slots |
-| Pack | Authored world, characters, knowledge, facts, conditions, prose guidance |
+| Pack | Authored world, characters, knowledge, facts, `when` gates, prose guidance |
 | DARPS engine | Context isolation, validation, narrative state, deltas |
 | LLM | Classification and narration proposals |
 
@@ -16,7 +16,7 @@ DARPS divides responsibility deliberately:
 - **Knowledge** is information supplied to a particular character's prompt.
   It may authorize that character to reveal a fact.
 - **Shared knowledge** belongs to the entity it describes. DARPS filters the
-  addressee's complete corpus by scope and conditions before retrieving
+  addressee's complete corpus by scope and `when` gates before retrieving
   relevant entries.
 - **Canon** records concrete improvised or host-established details that are
   not part of the authored fact web.

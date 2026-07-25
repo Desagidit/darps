@@ -17,6 +17,8 @@
 | `canon` | `true` | Request, retain, and reuse canon additions |
 | `guardrails` | `true` | Screen meta/injection and physics violations |
 | `knowledge_resolver` | `false` | Semantic retrieval over the addressee's secrecy-safe shared knowledge |
+| `examine_resolver` | `false` | Semantic matching over the resolved entity's currently eligible examination trigger groups |
+| `strict_items` | `false` | Reject unknown examination targets instead of treating them as parts of the current location |
 | `hints.after_turns` | `6` | Relevant fruitless turns before a hint |
 | `hints.style` | `subtle` | `subtle`, `pointed`, or `forthcoming` |
 | `flags_file` | unset | Host-maintained YAML flags, re-read per call |
@@ -36,6 +38,8 @@ tracks: true
 canon: false
 guardrails: true
 knowledge_resolver: false
+examine_resolver: false
+strict_items: false
 hints: {after_turns: 6, style: subtle}
 history_turns: 12
 persona_history_turns: 12

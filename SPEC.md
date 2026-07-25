@@ -105,14 +105,14 @@ journal and all future LLM contexts.
 
 - id: overheard_quarrel      # testimony: revealed in conversation by whoever
   requires: []                #   holds a knowledge entry revealing it
-  conditions:                 # extra gates in the condition vocabulary (§6);
+  when:                       # extra gates in the condition vocabulary (§6);
     - {track_gte: {track: disposition, value: 1}}   # `of` defaults to the
   journal_text: >-            # authoritative journal entry text
     ...
 ```
 
-A fact needs at least one source: a location's `search_reveals` rule (§7), an
-item's `examine_reveals` (§8), or a knowledge entry — a
+A fact needs at least one source: a location or item's `examine_reveals` rule
+(§7–8), or a knowledge entry — a
 character's own `knowledge:` or any entity's `shared_knowledge:` (§5½) — that
 `reveals:` it. **Who can reveal a testimony fact is derived**: a character
 may propose it only if their briefing contains a revealing entry *this turn*
@@ -121,7 +121,7 @@ may propose it only if their briefing contains a revealing entry *this turn*
 and fail validation. `requires` must be acyclic.
 
 **The reveal rule (normative):** a fact enters the journal only when the
-engine approves it — prerequisites held, conditions true, and (for testimony)
+engine approves it — prerequisites held, `when` gates true, and (for testimony)
 proposed by the right character. LLM proposals that fail any check are
 stripped. Engines MUST enforce this; it is the anti-hallucination and
 anti-leak guarantee.
@@ -246,7 +246,7 @@ he makes the cocoa. Physical presence neither grants nor removes memory.
 
 Config `knowledge_resolver: true` adds one classifier call that may select
 semantic or indirect matches from the safe corpus. The resolver never sees
-entries removed by scope or conditions, returned indexes are engine-validated,
+entries removed by scope or `when` gates, returned indexes are engine-validated,
 and its choices can only add to deterministic retrieval. It is off by default.
 
 Use `common` sparingly for genuinely universal background knowledge. Prefer a
@@ -264,10 +264,10 @@ The briefing is the reveal authority (§4): a character may reveal a fact from
 a shared entry only on turns where that safe entry was actually retrieved.
 Context and authority cannot disagree.
 
-## 6. Conditions
+## 6. `when` gates
 
 Used in `knowledge[].when`, `shared_knowledge[].when` (§5½ — `self` = subject
-entity), `facts[].conditions`, and `examine_reveals[].conditions`.
+entity), `facts[].when`, and `examine_reveals[].when`.
 
 | Condition | True when |
 |---|---|
@@ -277,7 +277,9 @@ entity), `facts[].conditions`, and `examine_reveals[].conditions`.
 | `{track_gte: {track: <t>, value: <n>, of: <char_id>?}}` | the track is ≥ n; `of` defaults to the character in context |
 | `{not: <condition>}` | the wrapped condition is false — for knowledge that *expires* (a lie held until a flag is set). Wraps exactly one condition; may not directly wrap another `not`. A malformed inner condition makes the whole `not` false (negation never weakens fail-closed). |
 
-Lists of conditions are conjunctions. Unknown condition types evaluate false
+Every conditional list in pack content uses the field name `when`; the removed
+field name `conditions` is invalid. Lists of conditions are conjunctions.
+Unknown condition types evaluate false
 at runtime and are errors at validation time. **Growing this vocabulary
 requires updating this table, the evaluator, and the validator in the same
 change.** There is deliberately no expression language.
@@ -297,13 +299,21 @@ shared_knowledge:             # OPTIONAL: what characters know about this
   - scope: household          #   place, by scope (§5½)
     content: "Sir Edmund took brandy alone here from ten o'clock."
 description: "..."            # ground truth for narration in this place
-search_reveals:
+examine_reveals:
   - reveals: torn_letter
     where: the desk — its drawers and papers   # used verbatim in hint text
-    triggers: [desk, drawer, papers]           # examination keywords that make
-                                               # the engine AUTHORIZE discovery
+    triggers: [desk, drawer, papers]           # OPTIONAL: if present, one must
+                                               # match the examination
+    when: []                                   # optional source-specific §6 gates
 scenery: "..."                # freely improvisable; never yields facts
 ```
+
+Locations and items use the same examination-rule schema. If `triggers` is
+absent or empty, a general examination of the entity can authorize the rule.
+If present, at least one trigger must match the target or message.
+`examine_resolver: true` may add validated semantic matches. `when` controls
+whether this discovery route is active. The linked
+fact's own `requires` and `when` gates are then applied separately.
 
 ## 8. items/*.yaml — describable entities
 
@@ -321,12 +331,13 @@ shared_knowledge: []               # OPTIONAL: what characters KNOW about it,
 description: "..."                 # ground truth for examination narration
 examine_reveals:                   # examining it may surface facts,
   - reveals: bitter_glass          # through normal §4 gating
-    conditions: []                 # optional extra §6 conditions
+    triggers: [dregs, smell]       # OPTIONAL, as for locations
+    when: []                       # optional extra §6 conditions
 ```
 
 The `{flag: ...}` pattern connects host-owned world progress to narrative
 knowledge: when the world changes (a cabinet gets opened, however the game
-does that), the host sets a flag, and gated `examine_reveals`/knowledge
+does that), the host sets a flag, and gated `examine_reveals` or knowledge
 respond.
 
 ## 9. player.yaml — the protagonist
@@ -366,15 +377,15 @@ Engines strip the block from displayed prose and validate every field.
 
 ## 11. Prompt overrides
 
-Any of `classifier.txt`, `knowledge.txt`, `attitudes.txt`, `persona.txt`,
-`character.txt`, or `narrator.txt` in
+Any of `classifier.txt`, `knowledge.txt`, `examine.txt`, `attitudes.txt`,
+`persona.txt`, `character.txt`, or `narrator.txt` in
 `<pack>/prompts/` replaces the engine default. Templates use
 `{placeholder}` substitution; `{{` and `}}` escape literal braces. Overrides
 MUST preserve the response contract stated by the corresponding default:
-`knowledge.txt` returns relevant candidate indexes, classifier/adjudication
-prompts return their JSON shapes, and character/narrator prompts preserve the
-events contract (§10). The engine parses responses identically regardless of
-template origin.
+`knowledge.txt` and `examine.txt` return relevant candidate indexes,
+classifier/adjudication prompts return their JSON shapes, and
+character/narrator prompts preserve the events contract (§10). The engine
+parses responses identically regardless of template origin.
 
 ## 12. Aliases
 
@@ -384,8 +395,9 @@ canonical `name` ("Lady Ashworth" / "Constance" / "her Ladyship" all mean the
 widow; "snifter" / "dregs" may both identify the brandy glass). Item aliases
 join `name` and id in the deterministic matcher that resolves `examine`
 targets (longest term wins). Aliases are display strings only — never secret,
-never gated, and optional. Top-level item `triggers` do not exist; discovery-
-specific `search_reveals[].triggers` remain a separate location-search gate.
+never gated, and optional. Top-level item `triggers` do not exist.
+Discovery-specific `examine_reveals[].triggers` optionally narrow a reveal on
+either a location or an item; they do not identify the entity itself.
 
 ## 13. The runtime API
 
@@ -396,7 +408,8 @@ structurally impossible.
 ```python
 Game.talk(character_id, message, *, world=None, tone=None) -> result
 Game.examine(target, message="", *, world=None, tone=None) -> result
-     # target: an item id, or a loose noun resolved via aliases
+     # target: an accessible item id/name/alias, the current location, or
+     # (unless strict_items is true) a loose noun within the current location
 ```
 
 Three host-authority writes complete the surface — no LLM call, no world
@@ -430,10 +443,15 @@ world = {"location":         location_id, # default: manifest start_location
 ```
 
 Injected per call, used for that turn, **never persisted**. If the host
-declares `accessible_items`, only those items can be examined or asserted;
-if it omits the field, item narration stays non-committal. Flags may also be
-read from a **flags file** the game keeps up to date (config `flags_file`;
-re-read every call; per-call `world.flags` win on conflict).
+declares `accessible_items`, only those items can be examined or asserted.
+Trying to examine another known pack item is always an error. If the field is
+omitted, all pack items remain candidates as a permissive development
+fallback; production hosts SHOULD always supply it, including `[]`. A known
+location other than the current one is always rejected. Unknown targets are
+treated as parts of the current location unless `strict_items: true`, which
+rejects them. Flags may also be read from a **flags file** the game keeps up
+to date (config `flags_file`; re-read every call; per-call `world.flags` win
+on conflict).
 
 Unknown world fields are request errors. `accessible_items` is a list of pack
 item ids; `location` is a location id; `flags` is an object.
@@ -496,6 +514,15 @@ the addressee's safe shared-knowledge corpus, proposes relevant integer
 indexes, and cannot remove deterministic matches. Unknown or malformed indexes
 are discarded.
 
+With `examine_resolver: true`, examine calls may make one
+`examine:<entity_id>` classifier call after resolving the target and applying
+source and fact gates. It sees only the request and the resolved entity's
+currently eligible, not-already-matched trigger groups—never fact ids, journal
+text, inactive rules, or other entities—and proposes relevant integer indexes.
+Validated semantic selections can add to deterministic trigger matches but
+never remove them. The call is skipped when there are no unresolved trigger
+groups.
+
 If the pack declares `persona`, every talk and examine input additionally gets
 a cheap `persona` classification. It sees the established player description,
 shared world context, already-found evidence, pack-authored guidance, recent
@@ -523,6 +550,11 @@ guardrails: true             # screen every message via the classifier
 knowledge_resolver: false    # semantic retrieval over the addressee's already
                              #   secrecy-filtered shared-knowledge corpus;
                              #   adds one classifier call per talk turn
+examine_resolver: false      # semantic matching over the resolved entity's
+                             #   eligible trigger groups; adds at most one
+                             #   classifier call per examine turn
+strict_items: false          # true rejects unknown examine targets instead of
+                             #   treating them as parts of the current location
 flags_file: flags.yaml       # optional: host-maintained progress flags
 history_turns: 12            # conversation exchanges remembered per character
 persona_history_turns: 12    # recent player inputs used for persona consistency
@@ -576,7 +608,7 @@ reference C# client lives in `clients/DarpsClient.cs`.
 `GET /pack` is deliberately allow-listed and secret-safe: it exposes entity
 ids/display names/aliases, track and persona numeric definitions, the default
 track, and capabilities. It never returns facts, descriptions, variables,
-knowledge, prompt guidance, or conditions.
+knowledge, prompt guidance, or authored gates.
 
 Errors use `{"error":{"code","message","diagnostic_id"?}}`. Malformed
 requests and invalid state return 400, unknown sessions/routes return 404,

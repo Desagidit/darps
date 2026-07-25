@@ -18,8 +18,9 @@
   private knowledge, reveal permissions, and per-character attitude tracks.
 
 **Classifier**
-: The cheaper model slot used for input screening, mention resolution,
-  attitudes, and persona. Classifier contexts contain no hidden story truth.
+: The cheaper model slot used for input screening, optional semantic
+  retrieval, attitudes, and persona. Classifier contexts are deliberately
+  secrecy-filtered for their task.
 
 **Condition**
 : A declarative gate from DARPS's closed vocabulary, such as `flag`,
@@ -32,6 +33,11 @@
 **Entity**
 : A character, location, or item with an ID, display name, aliases, and
   optional shared knowledge.
+
+**Examine resolver**
+: An optional classifier pass that adds semantic matches from the resolved
+  entity's currently eligible trigger groups. Returned indexes are validated;
+  deterministic matches and engine gates remain authoritative.
 
 **Events block**
 : Structured JSON proposed by a response model alongside prose. DARPS removes
@@ -67,7 +73,7 @@
 : The exact authored player-facing description stored when a fact is learned.
 
 **Knowledge**
-: Information placed in one character's briefing when its conditions pass.
+: Information placed in one character's briefing when its `when` gates pass.
 
 **Knowledge scope**
 : A subscription controlling which scoped shared-knowledge entries a character
@@ -114,6 +120,11 @@
 **Track prose**
 : Authored behavioral bands selected from numeric track values. Models see the
   prose, never the numbers.
+
+**Trigger**
+: An optional textual gate on an examination rule describing the detail or
+  action the player must inspect. Direct matches are deterministic; the
+  optional examine resolver may add semantic matches.
 
 **World snapshot**
 : Ephemeral host state supplied for one call: location, accessible items, and

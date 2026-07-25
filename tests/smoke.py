@@ -15,8 +15,12 @@ assert all("journal_text" in f and "player_text" not in f
 assert all("\n" not in f["journal_text"] for f in pack.facts().values())
 
 REPLIES = []; PROMPTS = []; TAGS = []; ATTITUDES = []; PERSONAS = []
+EXAMINE_RESOLUTIONS = []
 def fake(cfg, prompt, tag, classifier=False):
     PROMPTS.append(prompt); TAGS.append(tag)
+    if tag.startswith("examine:"):
+        relevant = EXAMINE_RESOLUTIONS.pop(0) if EXAMINE_RESOLUTIONS else []
+        return json.dumps({"relevant": relevant})
     if tag.startswith("attitudes:"):
         shift = ATTITUDES.pop(0) if ATTITUDES else 0
         return json.dumps({"shifts": shift if isinstance(shift, dict)
@@ -88,7 +92,7 @@ REPLIES += [char(reveals=["torn_letter"])]
 g.talk("butler", "and the letter?", world=SCENE, tone="probing")
 assert "torn_letter" not in st["facts_learned"]
 
-# 4) examine: findable triggers authorize; invented ids stripped; scene item
+# 4) examine: location triggers authorize; invented ids stripped; scene item
 #    examination reveals through gates; loose alias resolves the item
 g2, st2 = game()
 REPLIES += [narr(reveals=["torn_letter", "invented"])]
@@ -100,16 +104,18 @@ assert "bitter_glass" in st2["facts_learned"]        # alias -> brandy_glass
 assert "The examined object (ground truth): the brandy glass" in PROMPTS[-1]
 assert "the brandy glass (id: brandy_glass)" in PROMPTS[-1]   # scene line
 
-# 5) scene restriction: the host's world defines reach — an item outside
-#    accessible_items cannot be examined into a reveal (message avoids the
-#    location findable's triggers, which are legitimately location-scoped)
+# 5) scene restriction: the host's world defines reach — a known item outside
+#    accessible_items is rejected before narration.
 g3, st3 = game()
-REPLIES += [narr()]
-g3.examine("snifter", "sniff at it",
-           world={"location": "study", "accessible_items": []},
-           tone="neutral")
+try:
+    g3.examine("snifter", "sniff at it",
+               world={"location": "study", "accessible_items": []},
+               tone="neutral")
+    assert False, "known inaccessible item must raise"
+except ValueError as exc:
+    assert "not accessible" in str(exc)
 assert st3["facts_learned"] == []
-assert "Nothing new is discoverable" in PROMPTS[-1]
+assert st3["turn"] == 0
 
 # 6) host flags gate knowledge slices — including a lie with an expiry via not:
 #    (uses the scaffold pack, which ships both patterns on Mara)
@@ -504,10 +510,11 @@ legacy_mara.write_text(legacy_mara.read_text(encoding="utf-8").replace(
 legacy_parlor = legacy_sources / "locations" / "parlor.yaml"
 legacy_parlor.write_text(legacy_parlor.read_text(encoding="utf-8").replace(
     "reveals: hidden_door", "fact: hidden_door").replace(
-    "search_reveals:", "findables: []\nsearch_reveals:"), encoding="utf-8")
+    "examine_reveals:", "findables: []\nsearch_reveals:"), encoding="utf-8")
 legacy_facts = legacy_sources / "facts.yaml"
 legacy_facts.write_text(legacy_facts.read_text(encoding="utf-8").replace(
     "  requires: []", "  found_in: parlor\n  requires: []\n  conditions:\n"
+    "    - {flag: legacy_gate}\n  when:\n"
     "    - {fact_found: old_fact}", 1).replace(
     "  journal_text:", "  player_text:", 1), encoding="utf-8")
 # Spec-6 vocabulary is deliberately breaking: old names fail loudly.
@@ -524,11 +531,12 @@ legacy_item.write_text(legacy_item.read_text(encoding="utf-8") +
                        encoding="utf-8")
 errs, _ = lint_mod.lint(Pack(legacy_sources))
 assert any("'discloses' was removed in spec 3" in e for e in errs), errs
-assert any("findable 'fact' was removed in spec 3" in e for e in errs), errs
 assert any("'found_in'" in e and "removed in spec 4" in e for e in errs), errs
 assert any("'findables' was renamed in spec 4" in e for e in errs), errs
+assert any("'search_reveals' was removed" in e for e in errs), errs
 assert any("'player_text'" in e and "renamed in spec 5" in e for e in errs), errs
 assert any("'fact_found' was renamed in spec 5" in e for e in errs), errs
+assert any("'conditions'" in e and "use 'when'" in e for e in errs), errs
 assert any("'primary_track' was renamed in spec 6" in e for e in errs), errs
 assert any("'about' was renamed in spec 6" in e for e in errs), errs
 assert any("'knows' was renamed in spec 6" in e for e in errs), errs
@@ -555,7 +563,13 @@ assert not any("UNREACHABLE" in e for e in errs), errs   # about-revealer source
 #     lexical matches, and is off by default.
 # (a) enabled: a loose reference with no exact alias can retrieve relevant lore
 gm, stm = game(knowledge_resolver=True)
-REPLIES += [json.dumps({"relevant": [1, 999]}), char()]
+resolver_corpus = pack.shared_knowledge_corpus(
+    pack.characters()["butler"], gm._knowledge_entities(), state=stm,
+    game_vars=pack.vars(), manifest=manifest)
+widow_lore_index = next(
+    i for i, (_, _, entry) in enumerate(resolver_corpus)
+    if "separate rooms in private" in entry.get("content", ""))
+REPLIES += [json.dumps({"relevant": [widow_lore_index, 999]}), char()]
 gm.talk("butler", "tell me about the grieving missus",
         world={"location": "study", "accessible_items": []}, tone="probing")
 interp_prompt = next(p for p, t in reversed(list(zip(PROMPTS, TAGS)))
@@ -1006,5 +1020,236 @@ assert match_item("inspect the obsolete term", {
     "test_item": {"id": "test_item", "name": "a test item",
                   "triggers": ["obsolete term"]}}) is None
 
+# 36) ONE CONDITIONAL FIELD. `when` gates both facts and examination sources;
+#     the removed `conditions` spelling fails pack validation.
+gate_state = state_mod.new_state(manifest)
+gate_fact = {"id": "test_gate", "requires": [],
+             "when": [{"flag": "gate_open"}]}
+gate_state["flags"] = {"gate_open": False}
+assert not validate.fact_reveal_allowed(
+    gate_fact, state=gate_state, game_vars={}, manifest=manifest)
+gate_state["flags"]["gate_open"] = True
+assert validate.fact_reveal_allowed(
+    gate_fact, state=gate_state, game_vars={}, manifest=manifest)
+
+legacy_when = tmp / "legacy_when"
+_sh.copytree(tmp / "p", legacy_when)
+legacy_when_facts = legacy_when / "facts.yaml"
+legacy_when_facts.write_text(
+    legacy_when_facts.read_text(encoding="utf-8").replace(
+        "  when:", "  conditions:", 1),
+    encoding="utf-8")
+legacy_when_item = legacy_when / "items" / "house_key.yaml"
+legacy_when_item.write_text(
+    legacy_when_item.read_text(encoding="utf-8") +
+    "\nexamine_reveals:\n  - reveals: hidden_door\n"
+    "    conditions:\n      - {flag: unlocked}\n",
+    encoding="utf-8")
+errs, _ = lint_mod.lint(Pack(legacy_when))
+assert any("facts.yaml" in e and "'conditions'" in e and "use 'when'" in e
+           for e in errs), errs
+assert any("examine_reveals" in e and "'conditions'" in e and "use 'when'" in e
+           for e in errs), errs
+
+# 37) LOCATION EXAMINATION SOURCES HAVE `when`. Trigger matching and source
+#     gates both authorize discovery before the linked fact's gates apply.
+gsearch, _ = game()
+gated_study = dict(pack.location("study"))
+gated_rules = [dict(rule) for rule in gated_study["examine_reveals"]]
+gated_rules[0]["when"] = [{"flag": "desk_unlocked"}]
+gated_study["examine_reveals"] = gated_rules
+closed_view = gsearch._view({
+    "location": "study", "accessible_items": [],
+    "flags": {"desk_unlocked": False}}, manifest)
+open_view = gsearch._view({
+    "location": "study", "accessible_items": [],
+    "flags": {"desk_unlocked": True}}, manifest)
+closed_discoveries = gsearch._authorized_discoveries(
+    "desk", "search the drawers", {"topics": []}, gated_study,
+    pack.facts(), closed_view)
+open_discoveries = gsearch._authorized_discoveries(
+    "desk", "search the drawers", {"topics": []}, gated_study,
+    pack.facts(), open_view)
+assert "torn_letter" not in closed_discoveries
+assert "torn_letter" in open_discoveries
+
+# Static reachability also honors an examination source's `when`, rather than
+# treating an impossible route as a valid source.
+gated_search_pack = tmp / "gated_search"
+_sh.copytree(tmp / "p", gated_search_pack)
+gated_search_location = gated_search_pack / "locations" / "parlor.yaml"
+gated_search_location.write_text(
+    gated_search_location.read_text(encoding="utf-8").replace(
+        "    # when: [{flag: bookcase_movable}]",
+        "    when:\n      - {var: keeper, is: nobody}"),
+    encoding="utf-8")
+errs, _ = lint_mod.lint(Pack(gated_search_pack))
+assert any("hidden_door" in e and "UNREACHABLE" in e for e in errs), errs
+gated_search_location.write_text(
+    gated_search_location.read_text(encoding="utf-8").replace(
+        "is: nobody", "is: mara"),
+    encoding="utf-8")
+errs, _ = lint_mod.lint(Pack(gated_search_pack))
+assert not any("hidden_door" in e and "UNREACHABLE" in e for e in errs), errs
+
+# 38) LOCATIONS AND ITEMS SHARE ONE EXAMINATION CONTRACT. Missing triggers
+#     allow a general examination; strict_items only disables unknown-target
+#     fallback and never widens an explicit accessible_items list.
+gperm, _ = game()
+study = pack.location("study")
+empty_scene = gperm._view(
+    {"location": "study", "accessible_items": []}, manifest)
+resolved_id, resolved_entity, is_item = gperm._resolve_examine_target(
+    "desk", study, empty_scene)
+assert (resolved_id, resolved_entity["id"], is_item) == (
+    "study", "study", False)
+
+current_id, _, current_is_item = gperm._resolve_examine_target(
+    "the office", study, empty_scene)
+assert current_id == "study" and current_is_item is False
+
+development_scene = gperm._view({"location": "study"}, manifest)
+dev_item_id, _, dev_is_item = gperm._resolve_examine_target(
+    "snifter", study, development_scene)
+assert dev_item_id == "brandy_glass" and dev_is_item is True
+
+gstrict, _ = game(strict_items=True)
+try:
+    gstrict._resolve_examine_target("desk", study, empty_scene)
+    assert False, "strict_items must reject an unknown location subarea target"
+except ValueError as exc:
+    assert "not an accessible item or the current location" in str(exc)
+
+try:
+    gperm._resolve_examine_target("snifter", study, empty_scene)
+    assert False, "explicit accessibility must reject a known excluded item"
+except ValueError as exc:
+    assert "not accessible" in str(exc)
+
+class _LocationProxy:
+    def items(self):
+        return pack.items()
+
+    def location_ids(self):
+        return ["study", "cellar"]
+
+    def location(self, location_id):
+        if location_id == "cellar":
+            return {"id": "cellar", "name": "The Cellar",
+                    "aliases": ["basement"]}
+        return pack.location(location_id)
+
+
+gmulti = object.__new__(Game)
+gmulti.cfg = {}
+gmulti.pack = _LocationProxy()
+try:
+    gmulti._resolve_examine_target("basement", study, empty_scene)
+    assert False, "a known non-current location must be rejected"
+except ValueError as exc:
+    assert "not the current location" in str(exc)
+
+general_item = dict(pack.items()["brandy_glass"])
+general_item["examine_reveals"] = [{"reveals": "bitter_glass"}]
+general_reveals = gperm._authorized_discoveries(
+    "brandy_glass", "", {"topics": []}, general_item,
+    pack.facts(), empty_scene)
+assert "bitter_glass" in general_reveals
+
+specific_item = dict(general_item)
+specific_item["examine_reveals"] = [{
+    "reveals": "bitter_glass", "triggers": ["smell"]}]
+assert "bitter_glass" not in gperm._authorized_discoveries(
+    "brandy_glass", "hold it to the light", {"topics": []}, specific_item,
+    pack.facts(), empty_scene)
+assert "bitter_glass" in gperm._authorized_discoveries(
+    "brandy_glass", "smell the dregs", {"topics": []}, specific_item,
+    pack.facts(), empty_scene)
+
+# The linter applies the same optional-trigger schema to locations and items.
+bad_triggers_pack = tmp / "bad_triggers"
+_sh.copytree(tmp / "p", bad_triggers_pack)
+bad_trigger_location = bad_triggers_pack / "locations" / "parlor.yaml"
+bad_trigger_location.write_text(
+    bad_trigger_location.read_text(encoding="utf-8").replace(
+        "triggers: [bookcase, books, shelf, wall, behind]",
+        "triggers: bookcase"),
+    encoding="utf-8")
+errs, _ = lint_mod.lint(Pack(bad_triggers_pack))
+assert any("locations/parlor" in e and "'triggers' must be a list" in e
+           for e in errs), errs
+
+# 39) OPT-IN EXAMINE RESOLVER. It sees only eligible unmatched trigger
+#     groups, adds validated semantic matches, and never removes deterministic
+#     matches or bypasses source/fact gates.
+gresolve, stresolve = game(examine_resolver=True)
+EXAMINE_RESOLUTIONS += [[0]]
+REPLIES += [narr(reveals=["torn_letter"])]
+gresolve.examine(
+    "study", "inspect the epistolary material",
+    world={"location": "study", "accessible_items": []}, tone="neutral")
+assert "torn_letter" in stresolve["facts_learned"]
+resolver_prompt = next(
+    p for p, t in reversed(list(zip(PROMPTS, TAGS)))
+    if t == "examine:study")
+assert "desk, drawer, drawers, papers, letters, correspondence" in resolver_prompt
+assert "torn_letter" not in resolver_prompt
+assert "A letter torn in half" not in resolver_prompt
+
+# Direct trigger matches are the floor and need no resolver call.
+tag_count = len([t for t in TAGS if t.startswith("examine:")])
+direct_entity = {
+    "id": "test_object",
+    "name": "the test object",
+    "examine_reveals": [{
+        "reveals": "bitter_glass", "triggers": ["smell"]}]}
+direct_reveals = gresolve._authorized_discoveries(
+    "test_object", "smell it", {"topics": []}, direct_entity,
+    pack.facts(), empty_scene)
+assert direct_reveals == ["bitter_glass"]
+assert len([t for t in TAGS if t.startswith("examine:")]) == tag_count
+
+# Closed source rules never enter the resolver prompt. Invalid indexes,
+# booleans, and malformed selections cannot authorize anything.
+filtered_entity = {
+    "id": "filtered_object",
+    "name": "the filtered object",
+    "examine_reveals": [
+        {"reveals": "bitter_glass", "triggers": ["secret scent"],
+         "when": [{"flag": "sealed"}]},
+        {"reveals": "overheard_quarrel", "triggers": ["argument"]},
+        {"reveals": "bitter_glass", "triggers": ["surface marks"]},
+    ]}
+EXAMINE_RESOLUTIONS += [[True, -1, 9]]
+filtered_reveals = gresolve._authorized_discoveries(
+    "filtered_object", "inspect its patina", {"topics": []},
+    filtered_entity, pack.facts(), empty_scene)
+assert filtered_reveals == []
+filtered_prompt = next(
+    p for p, t in reversed(list(zip(PROMPTS, TAGS)))
+    if t == "examine:filtered_object")
+assert "surface marks" in filtered_prompt
+assert "secret scent" not in filtered_prompt
+assert "argument" not in filtered_prompt
+
+EXAMINE_RESOLUTIONS += ["not-a-list"]
+assert gresolve._authorized_discoveries(
+    "test_object", "sniff it", {"topics": []}, direct_entity,
+    pack.facts(), empty_scene) == []
+
+# Disabled mode performs no semantic call and preserves deterministic-only
+# behavior.
+gnoresolve, _ = game()
+disabled_tag_count = len([t for t in TAGS if t.startswith("examine:")])
+assert gnoresolve._authorized_discoveries(
+    "test_object", "sniff it", {"topics": []}, direct_entity,
+    pack.facts(), empty_scene) == []
+assert gnoresolve._authorized_discoveries(
+    "test_object", "inspect it", {"topics": ["smell"]}, direct_entity,
+    pack.facts(), empty_scene) == []
+assert len([t for t in TAGS if t.startswith("examine:")]) == disabled_tag_count
+
 assert not REPLIES, f"unconsumed stub replies: {REPLIES}"
-print("ALL DARPS SMOKE TESTS PASSED (35 groups)")
+assert not EXAMINE_RESOLUTIONS, (
+    f"unconsumed examine resolver replies: {EXAMINE_RESOLUTIONS}")
+print("ALL DARPS SMOKE TESTS PASSED (39 groups)")

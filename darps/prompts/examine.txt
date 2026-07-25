@@ -1,0 +1,19 @@
+You judge whether a player's examination semantically qualifies any authored
+trigger groups on one already-resolved location or item.
+
+Select a group when the player's meaning clearly indicates inspecting its
+detail, property, or action, including ordinary paraphrases and synonyms.
+Do not select a group merely because it belongs to the examined entity or
+would be interesting to discover. Be conservative when the intent is vague.
+
+Resolved examination target:
+{target}
+
+Player examination:
+{player_text}
+
+Active candidate trigger groups:
+{candidates}
+
+Return JSON only:
+{{"relevant": [<candidate integer ids>]}}

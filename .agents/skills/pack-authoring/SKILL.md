@@ -31,9 +31,9 @@ HOST GAME, not the pack.
 ## The mental model (get this right and the rest is writing)
 
 - **Facts are the spine.** Every discovery is a fact with gates: `requires`
-  (fact prerequisites) + `conditions` (closed vocabulary). A fact needs a
-  source: a location's `search_reveals` rule, an item's
-  `examine_reveals`, OR a `knowledge`/`shared_knowledge` entry that `reveals:` it — WHO
+  (fact prerequisites) + `when` (closed condition vocabulary). A fact needs a
+  source: a location or item's `examine_reveals` rule, OR a
+  `knowledge`/`shared_knowledge` entry that `reveals:` it — WHO
   can reveal testimony is derived from revealing entries in the briefing;
   there is no revealed_by field. The engine strips any reveal that doesn't
   pass the gate. Its `journal_text` is the exact player-facing entry returned
@@ -100,8 +100,10 @@ HOST GAME, not the pack.
 - The culprit-equivalent's `when`-gated block must specify: how they lie,
   what they deflect toward, and exactly what evidence combination cracks
   them.
-- Search-reveal `triggers` and item `aliases` should cover synonyms a player
-  would actually type (desk/drawer/papers; railing/banister).
+- Examination `triggers` and item/location `aliases` should cover synonyms a
+  player would actually type (desk/drawer/papers; railing/banister). Host
+  config may enable `examine_resolver` for semantic paraphrases, but clear
+  authored terms remain the deterministic floor.
 - Solvability floor: testimony-gated facts need a plausible path to the
   track threshold; check the track and character guidance explain how trust
   is earned. Keep a physical-evidence route where possible so alienating one

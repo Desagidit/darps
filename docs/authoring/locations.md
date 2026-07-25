@@ -1,6 +1,7 @@
 # Locations
 
-Locations ground narration and authorize discoveries from free-text searches.
+Locations ground narration and authorize discoveries when the player examines
+the place or one of its named areas.
 
 ```yaml
 --8<-- "docs/examples/minimal-pack/locations/workshop.yaml"
@@ -12,19 +13,25 @@ Locations ground narration and authorize discoveries from free-text searches.
 | `description` | Examination-grade ground truth |
 | `scenery` | Safe atmospheric details the narrator may use |
 | `shared_knowledge` | What relevant characters know about the place |
-| `search_reveals` | Triggered fact sources for searching this location |
+| `examine_reveals` | Fact sources for examining this location |
 | `hints` | `false` disables narrator pacing hints here |
 
-Each search rule identifies a fact, player vocabulary, and a useful hint
+Each rule identifies a fact, optional matching vocabulary, and a useful hint
 target:
 
 ```yaml
-search_reveals:
+examine_reveals:
   - reveals: altered_ledger
     where: the delivery ledger beside the main bench
     triggers: [ledger, book, deliveries, ink, entry]
+    when:
+      - flag: workshop_unlocked
 ```
 
-Triggers should contain nouns and verbs players will actually type. The model
-does not decide whether the fact is discoverable: DARPS matches the trigger
-and evaluates the fact gates before constructing the narrator prompt.
+Omit `triggers` when a general look around should be sufficient. Otherwise,
+use nouns and verbs players will actually type. The model does not decide
+whether the fact is discoverable: DARPS matches any required trigger and
+evaluates the source's `when` gates followed by the linked fact's gates before
+constructing the narrator prompt. Host config `examine_resolver: true` may add
+semantic trigger matches from this entity's eligible rules; all gates remain
+engine-enforced.

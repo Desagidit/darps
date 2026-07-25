@@ -61,7 +61,7 @@ it, sight unseen. Tone: quiet, uncanny, warm underneath. Second person present
 tense for narration. Keep responses under 120 words. Never mention game
 mechanics. Never invent significant facts beyond what instructions authorize.
 ''',
-"facts.yaml": '''# The fact web. `requires` gates on other facts; `conditions`
+"facts.yaml": '''# The fact web. `requires` gates on other facts; `when`
 # uses the DARPS condition vocabulary (see SPEC.md §6).
 - id: hidden_door
   requires: []
@@ -78,7 +78,7 @@ mechanics. Never invent significant facts beyond what instructions authorize.
 # `reveals:` it (Mara's file does). No revealed_by field.
 - id: keepers_admission
   requires: [old_photo]
-  conditions:
+  when:
     - {track_gte: {track: disposition, value: 1}}
   journal_text: >-
     Mara admits she has kept this house — and its door — far longer than any
@@ -124,7 +124,7 @@ background: >
 
 # Unified knowledge model: plain entries are freely shareable; `reveals`
 # entries carry a disclosure policy; `when` entries only enter context if
-# the conditions hold (this is the context-isolation secrecy mechanism).
+# the `when` gates hold (this is the context-isolation secrecy mechanism).
 # HOST FLAGS are the progress signal: the game injects them per call (or
 # keeps a flags file up to date), and knowledge gates on them — including
 # negations, for lies that expire.
@@ -235,10 +235,11 @@ description: >
   Dust sheets pulled from good furniture, a cold hearth, and a bookcase far
   too heavy for its wall. Mara stands ready with tea; Tom has let himself in.
 
-search_reveals:
+examine_reveals:
   - reveals: hidden_door
     where: the bookcase and the wall behind it
     triggers: [bookcase, books, shelf, wall, behind]
+    # when: [{flag: bookcase_movable}]  # optional source-specific gate
   - reveals: old_photo
     where: through the painted-over door
     triggers: [door, doorway, inside, through, photo]

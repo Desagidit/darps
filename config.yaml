@@ -24,6 +24,11 @@ guardrails: true          # screen every message for meta/injection attempts
 knowledge_resolver: false # optional semantic retrieval across the character's
                           # already secrecy-filtered shared knowledge; costs one
                           # classifier call per talk turn
+examine_resolver: false   # optional semantic matching over the resolved
+                          # entity's active trigger groups; at most one
+                          # classifier call per examine turn
+strict_items: false       # true rejects unknown examine targets instead of
+                          # treating them as parts of the current location
 # hints: {after_turns: 6, style: subtle} # pacing nudges: subtle|pointed|forthcoming
 # flags_file: flags.yaml             # host-maintained progress flags, re-read per call
 history_turns: 12         # conversation exchanges remembered per character

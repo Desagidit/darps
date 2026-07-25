@@ -11,7 +11,7 @@ facts.yaml         gated journal truth
 vars.yaml          engine-only ground truth
 player.yaml        established player role
 characters/*.yaml  individual voice, biography, knowledge, attitudes
-locations/*.yaml   narration ground truth and search discoveries
+locations/*.yaml   narration ground truth and examination discoveries
 items/*.yaml       object ground truth and examination discoveries
 prompts/*.txt      optional advanced prompt overrides
 ```
@@ -34,8 +34,7 @@ Every learnable truth must be declared once in `facts.yaml` and have a source:
 
 - a character `knowledge` entry;
 - a relevant entity's `shared_knowledge` entry;
-- a location `search_reveals` rule; or
-- an item `examine_reveals` rule.
+- a location or item `examine_reveals` rule.
 
 The source and fact gates must both pass. Generated prose alone never teaches
 the player a fact.

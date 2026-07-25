@@ -109,6 +109,9 @@ def lint(pack: Pack) -> tuple[list[str], list[str]]:
             if not isinstance(k, dict) or not k.get("content"):
                 errors.append(f"{where}: every shared_knowledge entry needs 'content'")
                 continue
+            if "conditions" in k:
+                errors.append(f"{where}: shared_knowledge uses removed field "
+                              "'conditions'; use 'when'")
             scope = k.get("scope", "common")
             if not isinstance(scope, str) or not scope.strip():
                 errors.append(f"{where}: shared_knowledge 'scope' must be a non-empty string")
@@ -181,10 +184,13 @@ def lint(pack: Pack) -> tuple[list[str], list[str]]:
 
     # ------------------------------------------------------------- facts
     for fid, fact in facts.items():
+        if "conditions" in fact:
+            errors.append(f"facts.yaml: '{fid}' uses removed field 'conditions'; "
+                          "use 'when'")
         if "found_in" in fact:
             errors.append(f"facts.yaml: '{fid}' uses 'found_in', which was removed "
                           "in spec 4; define the source once in a location's "
-                          "'search_reveals'")
+                          "'examine_reveals'")
         for req in fact.get("requires", []):
             if req not in facts:
                 errors.append(f"facts.yaml: '{fid}' requires unknown fact '{req}'")
@@ -199,7 +205,7 @@ def lint(pack: Pack) -> tuple[list[str], list[str]]:
         if not fact.get("journal_text"):
             warnings.append(f"facts.yaml: '{fid}' has no journal_text "
                             "(journal will be blank)")
-        for cond in fact.get("conditions", []) or []:
+        for cond in fact.get("when", []) or []:
             _lint_condition(cond, f"facts.yaml:{fid}", game_vars, facts, tracks,
                             errors, allow_self=fid in revealers)
 
@@ -208,27 +214,35 @@ def lint(pack: Pack) -> tuple[list[str], list[str]]:
     if cyc:
         errors.append(f"facts.yaml: circular requires chain: {' -> '.join(cyc)}")
 
-    # ----------------------------------------------- locations/search reveals
-    search_revealed_facts = set()
+    # ----------------------------------------------------------- discoveries
+    discovery_sources: dict[str, list[list]] = {}
     for lid in loc_ids:
         loc = pack.location(lid)
         _lint_aliases(loc, f"locations/{lid}", errors)
         _lint_hints_flag(loc, f"locations/{lid}", errors)
         if "findables" in loc:
             errors.append(f"locations/{lid}: 'findables' was renamed in spec 4; "
-                          "use 'search_reveals'")
-        for f in loc.get("search_reveals", []):
+                          "use 'examine_reveals'")
+        if "search_reveals" in loc:
+            errors.append(f"locations/{lid}: 'search_reveals' was removed; "
+                          "use 'examine_reveals'")
+        for f in loc.get("examine_reveals", []) or []:
+            if "conditions" in f:
+                errors.append(f"locations/{lid}: examine_reveals uses removed field "
+                              "'conditions'; use 'when'")
             if "fact" in f:
-                errors.append(f"locations/{lid}: findable 'fact' was removed in "
+                errors.append(f"locations/{lid}: examine_reveals 'fact' was removed in "
                               "spec 3; use 'reveals'")
+            _lint_discovery_rule(f, f"locations/{lid}", errors)
             if f.get("reveals") not in facts:
-                errors.append(f"locations/{lid}: findable references unknown fact "
+                errors.append(f"locations/{lid}: examine_reveals references unknown fact "
                               f"'{f.get('reveals')}'")
             else:
-                search_revealed_facts.add(f["reveals"])
-            if not f.get("triggers"):
-                warnings.append(f"locations/{lid}: findable '{f.get('reveals')}' has no "
-                                f"triggers — it can never be discovered by search")
+                discovery_sources.setdefault(f["reveals"], []).append(
+                    f.get("when", []) or [])
+            for cond in f.get("when", []) or []:
+                _lint_condition(cond, f"locations/{lid}", game_vars, facts, tracks,
+                                errors, allow_self=False)
             if f.get("gives_item"):
                 warnings.append(f"locations/{lid}: 'gives_item' was removed in "
                                 f"spec 2 and is ignored (the host owns items)")
@@ -247,13 +261,20 @@ def lint(pack: Pack) -> tuple[list[str], list[str]]:
                                 f"is ignored (items are describable entities; "
                                 f"the host owns movement and holders)")
         for er in item.get("examine_reveals", []) or []:
+            if "conditions" in er:
+                errors.append(f"items/{iid}: examine_reveals uses removed field "
+                              "'conditions'; use 'when'")
             if "fact" in er:
                 errors.append(f"items/{iid}: examine_reveals 'fact' was removed in "
                               "spec 3; use 'reveals'")
+            _lint_discovery_rule(er, f"items/{iid}", errors)
             if er.get("reveals") not in facts:
                 errors.append(f"items/{iid}: examine_reveals unknown fact "
                               f"'{er.get('reveals')}'")
-            for cond in er.get("conditions", []) or []:
+            else:
+                discovery_sources.setdefault(er["reveals"], []).append(
+                    er.get("when", []) or [])
+            for cond in er.get("when", []) or []:
                 _lint_condition(cond, f"items/{iid}", game_vars, facts, tracks,
                                 errors, allow_self=False)
     if player.get("inventory"):
@@ -302,6 +323,9 @@ def lint(pack: Pack) -> tuple[list[str], list[str]]:
                 warnings.append(f"characters/{cid}: no track_prose for track "
                                 f"'{track}' — it will read as 'Neutral.'")
         for k in char.get("knowledge", []):
+            if "conditions" in k:
+                errors.append(f"characters/{cid}: knowledge uses removed field "
+                              "'conditions'; use 'when'")
             if "discloses" in k:
                 errors.append(f"characters/{cid}: 'discloses' was removed in spec 3; "
                               "use 'reveals'")
@@ -313,16 +337,12 @@ def lint(pack: Pack) -> tuple[list[str], list[str]]:
                                 errors, allow_self=True)
 
     # ------------------------------------------------------ reachability
-    item_sourced = set()
-    for it in items.values():
-        for er in it.get("examine_reveals", []) or []:
-            item_sourced.add(er.get("reveals"))
-    reachable = _reachable_facts(facts, search_revealed_facts | item_sourced,
+    reachable = _reachable_facts(facts, discovery_sources,
                                  revealers, tracks, game_vars, m)
     for fid in facts:
         if fid not in reachable:
-            errors.append(f"facts.yaml: '{fid}' is UNREACHABLE — no findable, "
-                          f"examinable item, or knowledge/shared_knowledge entry that "
+            errors.append(f"facts.yaml: '{fid}' is UNREACHABLE — no location/item "
+                          f"examination or knowledge/shared_knowledge entry that "
                           f"reveals it")
 
     return errors, warnings
@@ -337,6 +357,21 @@ def _lint_aliases(obj, where, errors):
     if not isinstance(al, list) or not all(
             isinstance(a, str) and a.strip() for a in al):
         errors.append(f"{where}: 'aliases' must be a list of non-empty strings")
+
+
+def _lint_discovery_rule(rule, where, errors):
+    """Location and item examination rules deliberately share one schema."""
+    triggers = rule.get("triggers")
+    if triggers is not None and (
+            not isinstance(triggers, list)
+            or not all(isinstance(t, str) and t.strip() for t in triggers)):
+        errors.append(
+            f"{where}: examine_reveals 'triggers' must be a list of "
+            "non-empty strings")
+    if "where" in rule and (
+            not isinstance(rule["where"], str) or not rule["where"].strip()):
+        errors.append(
+            f"{where}: examine_reveals 'where' must be a non-empty string")
 
 
 def _lint_hints_flag(obj, where, errors):
@@ -410,12 +445,14 @@ def _find_cycle(graph: dict) -> list | None:
     return None
 
 
-def _reachable_facts(facts, sourced_facts, revealers, tracks, game_vars, manifest):
+def _reachable_facts(facts, discovery_sources, revealers, tracks, game_vars,
+                     manifest):
     """Fixed-point reachability: a fact is reachable if its requires are all
-    reachable AND it has a source (findable / examinable item / a knowledge
-    entry that reveals it) AND its conditions are best-case satisfiable.
+    reachable AND it has an examination or knowledge source whose
+    source-level `when` gates can pass, AND the
+    fact's own `when` gates are best-case satisfiable.
     Host flags (and their negations) are satisfiable by definition — the host
-    controls them over time. For testimony, `self` in conditions is satisfied
+    controls them over time. For testimony, `self` in `when` is satisfied
     if ANY potential revealer satisfies it."""
     reachable = set()
     changed = True
@@ -427,15 +464,22 @@ def _reachable_facts(facts, sourced_facts, revealers, tracks, game_vars, manifes
                 continue
             if not all(r in reachable for r in fact.get("requires", [])):
                 continue
+            physical_source = any(
+                all(_best_case(cond, facts, reachable, tracks, game_vars,
+                               manifest, ceiling_state, self_id=None)
+                    for cond in source_when)
+                for source_when in discovery_sources.get(fid, []))
             via = revealers.get(fid, set())
-            if fid not in sourced_facts and not via:
+            if not physical_source and not via:
                 continue
-            selves = sorted(via) or [None]
+            selves = sorted(via)
+            if physical_source:
+                selves.append(None)
             ok = all(
                 any(_best_case(cond, facts, reachable, tracks, game_vars,
                                manifest, ceiling_state, self_id=s)
                     for s in selves)
-                for cond in fact.get("conditions", []) or [])
+                for cond in fact.get("when", []) or [])
             if ok:
                 reachable.add(fid)
                 changed = True

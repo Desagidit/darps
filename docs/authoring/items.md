@@ -17,16 +17,21 @@ which items are accessible on every call.
 | `hints` | `false` prevents item-targeted hints |
 
 Put every term that should identify the item in `aliases`, including alternate
-names, component words, and colloquial references. Location
-`search_reveals[].triggers` are different: they gate a particular discovery.
+names, component words, and colloquial references.
+`examine_reveals[].triggers` are different: on either an item or a location,
+they optionally narrow a particular discovery after the entity is resolved.
 
 ```yaml
 examine_reveals:
   - reveals: altered_ledger
-    conditions:
+    triggers: [ink, entries]
+    when:
       - {flag: workshop_unlocked}
 ```
 
-DARPS never moves, creates, equips, or persists an item. If a host supplies a
-scene with `accessible_items`, only those declared item IDs are eligible
-for examination.
+Omit `triggers` when examining the item generally should be enough. DARPS
+never moves, creates, equips, or persists an item. If a host supplies a scene
+with `accessible_items`, only those declared item IDs are eligible for
+examination; trying another known item is rejected. Enable
+`examine_resolver` in host config when paraphrases should supplement direct
+trigger matching.

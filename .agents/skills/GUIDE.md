@@ -296,12 +296,21 @@ decides what's in reach — it doesn't even remember where the player is
 between calls. Each call carries a small snapshot: where we are, which pack
 items are accessible, and the host's progress flags.
 
-What DARPS adds is the *narrative* side of objects. An item file is ground
-truth for description — the brandy glass is cut crystal, one of a set of six,
-dregs gone syrupy — so when your game says the glass is in the scene and the
-player examines it, the narration is accurate, and gated discoveries can
-fire: smelling the dregs surfaces the tainted-drink fact through the same
-approval gate as everything else.
+What DARPS adds is the *narrative* side of places and objects. Location and
+item files are ground truth for description and share one discovery shape,
+`examine_reveals`. A rule can fire on a general look, or use optional triggers
+when the player must mention a detail such as smelling the dregs. The engine
+resolves one entity and applies the same approval gate in either case.
+
+A known item omitted from the supplied accessible list is always rejected.
+Loose nouns such as "desk" normally mean a part of the current location; set
+`strict_items: true` when your game instead wants every examination target to
+resolve to an accessible item or the current location itself.
+
+Exact trigger matching remains the deterministic floor. Optional
+`examine_resolver: true` adds a secrecy-safe semantic pass over only the
+resolved entity's active trigger groups, so ordinary paraphrases can qualify
+without handing discovery authority to the model.
 
 The snapshot is also a leash on hallucination. Briefings state what objects
 the scene contains and instruct the model not to assert others, so "I

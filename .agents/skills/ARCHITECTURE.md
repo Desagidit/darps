@@ -60,13 +60,15 @@ host: talk(character, message, world?, tone?) | examine(target, message, world?,
    │             THIS TURN.
    └── examine ─► [3b] NARRATOR: world bible + location doc (+ examined item's
                  ground-truth description) + canon + journal + discovery
-                 instruction (engine pre-authorizes search_reveals by trigger match
-                 + item examine_reveals by alias resolution, both gate-checked)
+                 instruction (engine first resolves exactly one location/item,
+                 then pre-authorizes its examine_reveals through optional
+                 triggers + source/fact gates. Optional examine_resolver sees
+                 only eligible unmatched trigger groups and may add matches)
    │
    ▼
 [4] VALIDATION (validate.py) — the gate
-    events block parsed; reveals checked against fact gates (requires +
-    conditions via conditions.py), canon_additions capped (or discarded when
+    events block parsed; reveals checked against fact gates (`requires` +
+    `when` via conditions.py), canon_additions capped (or discarded when
     config `canon: false`),
     story_relevance clamped w/ safe default. Narrator reveals must be in the
     pre-authorized set. Failures are stripped, not errors — prose displays,
@@ -187,14 +189,14 @@ gates on them with `when:` — including negations for lies that expire
 host, so the validator treats them as satisfiable-in-principle when proving
 fact reachability.
 
-## Items: description, not simulation
+## Places and items: description, not simulation
 
-An item file is ground truth for narration plus optional gated
+Item and location files are ground truth for narration plus optional gated
 `examine_reveals`. The host declares per call which items are in the scene
-(`world.accessible_items`); only those can be examined, and prompts
-instruct models not to assert objects the scene doesn't establish. If the
-host declares no scene, item narration stays non-committal. Aliases resolve
-loose nouns ("the snifter", "dregs") deterministically.
+(`world.accessible_items`); a known excluded item cannot be examined. Omission
+keeps the development path permissive. Aliases resolve entities
+deterministically; optional rule triggers narrow a discovery. Unknown targets
+fall back to the current location unless host config enables `strict_items`.
 
 ## Pacing model (simplified)
 
@@ -202,8 +204,8 @@ loose nouns ("the snifter", "dregs") deterministically.
 clamped, default 1). The HOST's config sets one threshold and one style
 (`hints: {after_turns: N, style: subtle|pointed|forthcoming}`); entities opt out
 with `hints: false`. Hints are targeted: the engine picks a currently
-reachable fact and aims the nudge (character tell / narration lingering on a
-findable's `where`). `forthcoming` additionally evaluates `track_gte` gates
+reachable fact and aims the nudge (character tell / narration lingering on an
+examination rule's `where`). `forthcoming` additionally evaluates `track_gte` gates
 with slack 1 — the only place hints change rules, and it's an engine decision.
 
 ## Attitude model
@@ -229,8 +231,9 @@ or narrator prompts.
 ## Provider layer
 
 `config.yaml` (host-owned, not pack-owned): provider preset + model names +
-behavior toggles (`tracks`, `canon`, `hints`, `guardrails`, `knowledge_resolver`,
-`flags_file`, `history_turns`, `persona_history_turns`). Presets:
+behavior toggles (`tracks`, `canon`, `hints`, `guardrails`,
+`knowledge_resolver`, `examine_resolver`, `strict_items`, `flags_file`,
+`history_turns`, `persona_history_turns`). Presets:
 openai/anthropic/ollama/lmstudio/openai_compatible (stdlib HTTP client) +
 optional litellm. Keys from `.env` via `darps/env.py`. Two model slots:
 `model` (dialogue/narration) and `classifier_model` (cheap classification; a
@@ -239,5 +242,6 @@ small local model is fine).
 ## Observability
 
 `logs/calls.jsonl`: one line per LLM call — tag (`classifier`,
-`character:<id>`, `narrator`), model, latency, full prompt, full response.
+`knowledge:<id>`, `examine:<entity_id>`, `character:<id>`, `narrator`),
+model, latency, full prompt, full response.
 This is the primary debugging artifact; read it before theorizing.

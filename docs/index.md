@@ -1,7 +1,7 @@
 # DARPS
 
-DARPS (Dynamic Agentic RolePlaying System) is a conversation layer between a host game and an LLM.
-What if your game didn't have a list of conversation options? What if your players could just talk freely to NPCs?
+What if your game didn't have a list of conversation options?
+What if your players could just talk freely to NPCs?
 
 DARPS helps solve this problem through an easy-to-use API. You tell it who you're talking to and what you're saying and DARPS will:
 
@@ -23,7 +23,6 @@ Your game names the character being addressed—or the object being examined—a
 DARPS assembles only the context that interaction may see, calls the model, validates its proposed events, and returns prose plus narrative deltas.
 
 ![High Level Architecture](./images/darps_highlevel.png)
-
 
 ## Choose your path
 
@@ -63,5 +62,4 @@ DARPS assembles only the context that interaction may see, calls the model, vali
 
 </div>
 
-The [pack specification](authoring/pack-specification.md) is the normative
-contract. Tutorials explain it; they do not replace it.
+As the dev, you create your game as normal. But instead of providing limited dialogue options and logic, you define your world and its characters in a DARPS Pack.

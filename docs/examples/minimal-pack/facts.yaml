@@ -6,7 +6,7 @@
 
 - id: late_delivery
   requires: [altered_ledger]
-  conditions:
+  when:
   - track_gte:
       track: disposition
       value: 1
