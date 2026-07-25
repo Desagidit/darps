@@ -1,0 +1,21 @@
+You are compiling an inspectable semantic routing catalogue for a roleplaying
+game's shared knowledge.
+
+For every input item, write one concise routing description of at most
+{word_budget} words. This is compression level {level}.
+
+The route helps another model decide whether the original entry could answer a
+player's question. Preserve the entry's retrieval hooks:
+- named people, places, objects, groups, and relationships;
+- ownership, roles, routines, events, actions, and consequences;
+- times, dates, quantities, and unusual concrete details;
+- likely player wording, synonyms, or paraphrases for asking about it.
+
+Do not merely copy the opening words. Do not add facts absent from the source.
+Do not merge entries. Return every integer id exactly once.
+
+Input items:
+{candidates}
+
+Return JSON only:
+{{"routes":[{{"id":0,"routing":"concise semantic route"}}, ...]}}

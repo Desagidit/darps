@@ -14,6 +14,8 @@
 | `POST /talk/stream` | Yes | Yes | At `done` | Yes |
 | `POST /examine` | Yes | Yes | Yes | No |
 | `POST /examine/stream` | Yes | Yes | At `done` | Yes |
+| `POST /narrate` | Yes | Yes | No | No |
+| `POST /narrate/stream` | Yes | Yes | No | Yes |
 | `POST /adjust_track` | No | Yes | Yes | No |
 | `POST /grant_fact` | No | Yes | Yes | No |
 | `POST /add_canon` | No | Yes | Yes | No |

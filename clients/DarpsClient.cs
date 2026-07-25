@@ -89,10 +89,23 @@ public sealed class DarpsClient : IDisposable
                                      object world = null, string tone = null)
         => PostAsync("/examine", new { session, target, message, world, tone });
 
+    // Display-only host-directed narration. This reads DARPS narrative state
+    // and the supplied world snapshot, but does not advance a turn or mutate
+    // facts, tracks, persona, canon, histories, or hint pacing.
+    public Task<JsonElement> Narrate(string session, string instruction = "",
+                                     object world = null, string tone = null)
+        => PostAsync("/narrate", new { session, instruction, world, tone });
+
     public Task<JsonElement> ExamineStream(string session, string target,
                                             Action<string> onText, string message = "",
                                             object world = null, string tone = null)
         => ReadStream("/examine/stream", new { session, target, message, world, tone }, onText);
+
+    public Task<JsonElement> NarrateStream(string session, Action<string> onText,
+                                           string instruction = "",
+                                           object world = null, string tone = null)
+        => ReadStream("/narrate/stream",
+                      new { session, instruction, world, tone }, onText);
 
     // Streaming talk: prose arrives chunk-by-chunk (onText fires per chunk —
     // append to your dialogue box), and the returned result dict arrives once

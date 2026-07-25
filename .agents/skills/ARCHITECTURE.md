@@ -5,11 +5,12 @@ DECISIONS.md. For the pack format contract, read SPEC.md.
 
 ## The one-sentence architecture
 
-DARPS is a conversation layer between a host game and an LLM: per call the
-host names who is addressed (or what is examined) and hands over a small world
-snapshot; the engine assembles a scoped, condition-gated context, lets the
-model speak, then validates every event it proposes before anything touches
-narrative state.
+DARPS is a conversation layer between a host game and an LLM: per player call
+the host names who is addressed (or what is examined) and hands over a small
+world snapshot; the engine assembles a scoped, condition-gated context, lets
+the model speak, then validates every event it proposes before anything
+touches narrative state. A separate display-only narration call can render
+safe scene context without creating an event.
 
 ## What DARPS is NOT
 
@@ -54,7 +55,11 @@ host: talk(character, message, world?, tone?) | examine(target, message, world?,
    │             SHARED_KNOWLEDGE: build a safe corpus across ALL entities by
    │             speaker scope + `when`, then retrieve immediate, lexical, and
    │             optional semantic (`knowledge_resolver`) matches from only
-   │             that safe corpus + track prose (not numbers) + canon + journal +
+   │             that safe corpus. An optional compiled catalogue can shorten
+   │             common ungated resolver candidates, but selections always map
+   │             back to exact live entries. Levels 1–3 are produced by one
+   │             separately configured author-time semantic-compression call.
+   │             Then track prose (not numbers) + canon + journal +
    │             history + scene objects + tone. The same assembly yields the
    │             REVEALABLE set — the only facts this character may reveal
    │             THIS TURN.
@@ -81,6 +86,13 @@ host: talk(character, message, world?, tone?) | examine(target, message, world?,
     fruitless-turn counter ticks on story_relevance≥1 without a reveal, freezes on 0,
     resets on any reveal. Deltas computed for the host to mirror.
 ```
+
+General narration takes a shorter side path:
+`narrate(instruction, world?, tone?)` → effective world view → safe scene
+context (world bible, current location, declared accessible objects, learned
+journal, enabled canon) → `narrate.txt` → prose result with empty deltas. It
+performs no classifiers, event parsing, validation, pacing, history, turn
+increment, or state write.
 
 ## The result dict (the client boundary)
 
@@ -111,19 +123,23 @@ POST /talk/stream  same body -> Server-Sent Events     prose chunks, then
                    event: done carrying the result dict
 POST /examine   {session,target,message?,world?,tone?} -> result dict
 POST /examine/stream same body -> Server-Sent Events, same truth boundary
+POST /narrate   {session,instruction?,world?,tone?} -> read-only result dict
+POST /narrate/stream same body -> Server-Sent Events, empty final deltas
 POST /adjust_track {session,character,change?|value?,track?} host-driven track change, no LLM
 POST /grant_fact {session,fact}                        host-granted fact, no LLM
 POST /add_canon {session,text}                         host-authored canon, no LLM
 ```
 
-Streaming (`talk_stream` and `examine_stream`, library or HTTP): only prose streams — an
+Streaming (`talk_stream`, `examine_stream`, and `narrate_stream`, library or
+HTTP): only prose streams — an
 incremental fence detector withholds the events block (a small tail is held
 back so a partial fence never leaks) — and `deltas` arrive only
 with the final `done` frame, after the complete reply passes the gate. Same
-assembly, same gate, same state writes as the blocking call; the split into
+semantics as the blocking twin; the split into
 `_prepare_talk`/`_apply_talk` is shared verbatim so the two paths cannot
 drift. Each streaming path shares its preparation/application functions with
-its blocking twin. `llm.call_stream` logs the full prompt/response to calls.jsonl once
+its blocking twin. Narration has no events block and always ends with empty
+deltas. `llm.call_stream` logs the full prompt/response to calls.jsonl once
 the stream ends (`"streamed": true`).
 
 Sessions are in-memory, serialized by a per-session lock; the server does
@@ -143,6 +159,7 @@ SSE headers arrive as an `error` event. A reference C# client lives in
 | `validate.py` | runtime event gate | let an unvalidated field touch state |
 | `conditions.py` | the closed gate vocabulary | grow without SPEC+lint in same commit |
 | `content.py` | pack layout, prompt layering, knowledge rendering | leak `when`-false knowledge |
+| `knowledge_cache.py` | compile/validate optional common-lore routing catalogues | replace exact knowledge or reveal authority |
 | `lint.py` | static pack validation, reachability | drift from runtime semantics |
 | `llm.py` | provider HTTP (stdlib), call logging, events parsing | require heavy deps |
 | `state.py` | narrative-memory shape, save/load, session persona | store world state (the host owns it) |
@@ -232,16 +249,18 @@ or narrator prompts.
 
 `config.yaml` (host-owned, not pack-owned): provider preset + model names +
 behavior toggles (`tracks`, `canon`, `hints`, `guardrails`,
-`knowledge_resolver`, `examine_resolver`, `strict_items`, `flags_file`,
+`knowledge_resolver`, `knowledge_cache`, `examine_resolver`, `strict_items`, `flags_file`,
 `history_turns`, `persona_history_turns`). Presets:
 openai/anthropic/ollama/lmstudio/openai_compatible (stdlib HTTP client) +
-optional litellm. Keys from `.env` via `darps/env.py`. Two model slots:
+optional litellm. Keys from `.env` via `darps/env.py`. Two runtime model slots:
 `model` (dialogue/narration) and `classifier_model` (cheap classification; a
-small local model is fine).
+small local model is fine), plus an optional independently configured
+author-time `knowledge_cache.compression.model`.
 
 ## Observability
 
 `logs/calls.jsonl`: one line per LLM call — tag (`classifier`,
-`knowledge:<id>`, `examine:<entity_id>`, `character:<id>`, `narrator`),
+`knowledge:<id>`, `examine:<entity_id>`, `character:<id>`, `narrator`,
+`narrate`, `knowledge-compile`),
 model, latency, full prompt, full response.
 This is the primary debugging artifact; read it before theorizing.

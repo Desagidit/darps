@@ -72,6 +72,11 @@ the engine *disposes*.
 
 This is why DARPS conversations stay coherent when raw LLM wiring dissolves.
 
+There is also a deliberately simpler path for presentation. A host can ask
+DARPS to describe a room entry, storm, or transition with `narrate`. That call
+reads the safe scene and established narrative memory but proposes no events
+and changes nothing; it is writing for display, not a player turn.
+
 ---
 
 ## 3. How one call actually works
@@ -323,6 +328,12 @@ flag (`cabinet_open: true`) and the gated content responds: the cabinet's
 contents become examinable, the lie about it expires. Your game does the
 physics; DARPS does the meaning.
 
+For atmosphere that is not an examination, use general narration. The host
+supplies the scene snapshot and a direction such as "describe the gallery as
+the lights fail." It cannot discover the glass, create canon, advance hint
+pacing, or score the player's persona. Establish real changes through the
+host-authority APIs or flags; use narration only to present them.
+
 ---
 
 ## 8. What you can build with this
@@ -413,13 +424,14 @@ subtle, a threshold that makes Nell too stubborn.
 ## 10. Practical matters
 
 **Your game talks to DARPS over HTTP.** `darps serve <pack>` runs a small
-local server; your game POSTs JSON to `/talk` and `/examine` and gets prose
-plus deltas back. Any engine that can make a web request qualifies — a
+local server; your game POSTs JSON to `/talk` and `/examine` for player input,
+or `/narrate` for read-only host-directed scene prose, and gets a consistent
+result envelope back. Any engine that can make a web request qualifies — a
 reference C# client for Unity ships in `clients/`. Python hosts can skip the
 server and import the library directly.
 
 **Prose can stream.** If waiting for a full paragraph feels slow in-game,
-use `/talk/stream` or `/examine/stream`: dialogue or narration arrives chunk by chunk, so
+use `/talk/stream`, `/examine/stream`, or `/narrate/stream`: dialogue or narration arrives chunk by chunk, so
 the player starts reading almost immediately. Only the words stream — the
 hidden bookkeeping never appears, and the trustworthy "what changed" summary
 (facts learned, track changes) arrives once at the end, after the engine has
@@ -429,6 +441,15 @@ checked the reply. Type out the text as it comes; act on the final summary.
 mechanic metadata without story secrets; `/tracks`, `/persona`, and `/journal`
 return focused session views. Hosts can push external story events back with
 `/adjust_track`, `/grant_fact`, and `/add_canon` without making an AI call.
+
+**Large common-knowledge pools can be compiled.** Run
+`darps compile-knowledge <pack>` and enable `knowledge_cache` alongside
+`knowledge_resolver`. One separately configurable, author-time model call
+writes semantic routing labels under the selected size budget. The generated
+file is inspectable: the classifier sees short labels, while characters still
+receive exact YAML. If compilation fails, the last good file remains; if the
+file is absent, stale, or damaged at runtime, DARPS silently uses the ordinary
+full resolver, so this optimization cannot change narrative behavior.
 
 **Saving is your game's job, by design.** DARPS hands you its narrative
 memory as one JSON blob (`/state`); store it in your save file and hand it

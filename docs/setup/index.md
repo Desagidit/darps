@@ -49,4 +49,5 @@ curl http://127.0.0.1:8080/health
 {"status":"ok","pack":"Ashworth Manor"}
 ```
 
-Next, either [create a pack](first-pack.md) or [connect a host](connect-host.md).
+Next, either [create a pack](first-pack.md), review the
+[command-line tools](cli-reference.md), or [connect a host](connect-host.md).

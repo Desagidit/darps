@@ -3,6 +3,7 @@
 
   darps serve <pack>     the real interface: localhost HTTP for a host game
   darps validate <pack>  static pack linting
+  darps compile-knowledge <pack>  build an inspectable common-lore catalogue
   darps new <dir>        scaffold a pack
   darps play <pack>      DEV HARNESS: talk/examine with explicit addressing —
                          a stand-in for a host game, not a text adventure.
@@ -22,7 +23,8 @@ from pathlib import Path
 
 import yaml
 
-from . import env, lint as lint_mod, scaffold, state as state_mod
+from . import (env, knowledge_cache, lint as lint_mod, llm, scaffold,
+               state as state_mod)
 from .content import Pack
 from .orchestrator import Game
 
@@ -51,6 +53,34 @@ def cmd_new(args) -> int:
     root = scaffold.scaffold(args.dir)
     print(f"Scaffolded pack in {root}/")
     print(f"Next: edit the YAML, then `darps validate {root}` and `darps serve {root}`")
+    return 0
+
+
+def cmd_compile_knowledge(args) -> int:
+    env.load()
+    cfg = load_cfg(args.config)
+    pack = Pack(args.pack)
+    errors, _ = lint_mod.lint(pack)
+    if errors:
+        print(f"Pack has {len(errors)} validation error(s); "
+              f"run `darps validate {args.pack}`.")
+        return 1
+    try:
+        path = knowledge_cache.write_catalogue(
+            pack, cfg, setting=cfg.get("knowledge_cache"),
+            output=args.output, level=args.level)
+        catalogue = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, llm.ProviderError) as exc:
+        print(f"Could not compile knowledge: {exc}")
+        return 1
+    print(f"Compiled {len(catalogue['entries'])} common, ungated routes "
+          f"at level {args.level} into {path}")
+    compiler = catalogue.get("compiler", {})
+    if compiler.get("model"):
+        print(f"Compression model: {compiler.get('provider')}/"
+              f"{compiler['model']} (one author-time call)")
+    else:
+        print("Compression model: none (level 0 full text)")
     return 0
 
 
@@ -199,6 +229,20 @@ def main(argv=None) -> int:
     sn = sub.add_parser("new", help="scaffold a new pack")
     sn.add_argument("dir")
     sn.set_defaults(fn=cmd_new)
+    sk = sub.add_parser(
+        "compile-knowledge",
+        help="compile common ungated shared knowledge into a routing catalogue")
+    sk.add_argument("pack")
+    sk.add_argument(
+        "--output",
+        help="output path (default: knowledge-cache.yaml in the pack)")
+    sk.add_argument(
+        "--config", default="config.yaml",
+        help="host config containing the compression model (default: config.yaml)")
+    sk.add_argument(
+        "--level", type=int, choices=(0, 1, 2, 3), default=2,
+        help="0 full text; semantic route budgets: 1=40, 2=20, 3=12 words")
+    sk.set_defaults(fn=cmd_compile_knowledge)
     ss = sub.add_parser("serve", help="run the localhost HTTP layer for a host game")
     ss.add_argument("pack")
     ss.add_argument("--config", default="config.yaml")

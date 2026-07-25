@@ -49,6 +49,10 @@ limited and discarded entirely when canon is disabled.
 The narrator can reveal only facts pre-authorized from the current location or
 reachable item. Invented IDs and unauthorized discoveries are stripped.
 
+These are examination narrator events. The general `/narrate` call has no
+events contract at all: it returns display prose with empty deltas and never
+changes state.
+
 ## Classifier proposals
 
 Attitudes and persona use:

@@ -2,9 +2,11 @@
 stubbed LLM. Run: python tests/smoke.py"""
 import json, sys, tempfile
 from pathlib import Path
+import yaml
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from darps import conditions as C, lint as lint_mod, llm, scaffold, state as state_mod, validate
+from darps import (conditions as C, knowledge_cache, lint as lint_mod, llm,
+                   scaffold, state as state_mod, validate)
 from darps.content import Pack, match_item
 from darps.orchestrator import Game
 
@@ -14,10 +16,11 @@ assert all("journal_text" in f and "player_text" not in f
            for f in pack.facts().values())
 assert all("\n" not in f["journal_text"] for f in pack.facts().values())
 
-REPLIES = []; PROMPTS = []; TAGS = []; ATTITUDES = []; PERSONAS = []
+REPLIES = []; PROMPTS = []; TAGS = []; CALL_CONFIGS = []
+ATTITUDES = []; PERSONAS = []
 EXAMINE_RESOLUTIONS = []
 def fake(cfg, prompt, tag, classifier=False):
-    PROMPTS.append(prompt); TAGS.append(tag)
+    PROMPTS.append(prompt); TAGS.append(tag); CALL_CONFIGS.append(dict(cfg))
     if tag.startswith("examine:"):
         relevant = EXAMINE_RESOLUTIONS.pop(0) if EXAMINE_RESOLUTIONS else []
         return json.dumps({"relevant": relevant})
@@ -1249,7 +1252,255 @@ assert gnoresolve._authorized_discoveries(
     pack.facts(), empty_scene) == []
 assert len([t for t in TAGS if t.startswith("examine:")]) == disabled_tag_count
 
+# 40) GENERAL NARRATION. Host-directed scene prose reads safe established
+#     context but is display-only: no classifiers, events, state, pacing,
+#     history, turn increment, or autosave. Blocking, streaming, and HTTP
+#     expose the same empty-delta contract.
+gnarr, stnarr = game()
+gnarr.grant_fact("torn_letter")
+gnarr.add_canon("The study clock stopped at ten.")
+narration_before = json.loads(json.dumps(stnarr))
+tags_before = len(TAGS)
+REPLIES += [
+    "Rain needles the darkened windows.\n"
+    "```events\n"
+    '{"reveals":["bitter_glass"],"canon_additions":["invented"]}\n'
+    "```"
+]
+narrated = gnarr.narrate(
+    "Describe the study as the lamps fail.", world=SCENE, tone="ominous")
+assert narrated == {
+    "speaker": None,
+    "prose": "Rain needles the darkened windows.",
+    "tone": "ominous",
+    "deltas": {
+        "tracks": {}, "persona": {}, "facts_learned": [], "canon_added": []}}
+assert stnarr == narration_before
+assert TAGS[tags_before:] == ["narrate"]
+narration_prompt = PROMPTS[-1]
+assert "Describe the study as the lamps fail." in narration_prompt
+assert "The study clock stopped at ten." in narration_prompt
+assert pack.facts()["torn_letter"]["journal_text"].strip() in narration_prompt
+assert "Heavy cut crystal" in narration_prompt
+assert "YOU KILLED HIM" not in narration_prompt
+assert "examine_reveals" not in narration_prompt
+
+REPLIES += ["The room waits in silence."]
+default_narrated = gnarr.narrate(world=SCENE)
+assert default_narrated["tone"] == "neutral"
+assert "Describe the current scene briefly." in PROMPTS[-1]
+assert stnarr == narration_before
+try:
+    gnarr.narrate({"not": "text"}, world=SCENE)
+    assert False, "non-string narration instruction must fail"
+except ValueError:
+    pass
+assert stnarr == narration_before
+
+STREAM_CHUNKS = [
+    "Thunder rolls beyond the glass.",
+    "\n```events\n{\"reveals\":[\"bitter_glass\"]}\n```"]
+streamed_narration = list(gnarr.narrate_stream(
+    "Describe the storm.", world=SCENE, tone="tense"))
+assert "".join(
+    e["text"] for e in streamed_narration if e["type"] == "text"
+).strip() == "Thunder rolls beyond the glass."
+assert streamed_narration[-1]["type"] == "done"
+assert streamed_narration[-1]["result"]["deltas"] == {
+    "tracks": {}, "persona": {}, "facts_learned": [], "canon_added": []}
+assert stnarr == narration_before
+
+httpd = _srv.make_server(dict(CFG), pack, host="127.0.0.1", port=0)
+_t.Thread(target=httpd.serve_forever, daemon=True).start()
+_port = httpd.server_address[1]
+try:
+    sess = _post("/session", {})["session"]
+    wire_before = json.loads(_u.urlopen(
+        f"http://127.0.0.1:{_port}/state?session={sess}").read().decode())["state"]
+    REPLIES += ["Snow gathers along the sill."]
+    wire_result = _post("/narrate", {
+        "session": sess, "instruction": "Describe the window.",
+        "world": SCENE, "tone": "quiet"})
+    assert wire_result["prose"] == "Snow gathers along the sill."
+    assert wire_result["deltas"] == {
+        "tracks": {}, "persona": {}, "facts_learned": [], "canon_added": []}
+    metadata = json.loads(_u.urlopen(
+        f"http://127.0.0.1:{_port}/pack").read().decode())
+    assert {"narrate", "narrate_stream"} <= set(metadata["capabilities"])
+
+    STREAM_CHUNKS = ["The curtains stir."]
+    req = _u.Request(f"http://127.0.0.1:{_port}/narrate/stream",
+                     data=json.dumps({
+                         "session": sess, "instruction": "Describe the air.",
+                         "world": SCENE}).encode(),
+                     headers={"Content-Type": "application/json"}, method="POST")
+    body = _u.urlopen(req).read().decode()
+    assert "The curtains stir." in body
+    assert body.strip().split("\n\n")[-1].startswith("event: done")
+    wire_after = json.loads(_u.urlopen(
+        f"http://127.0.0.1:{_port}/state?session={sess}").read().decode())["state"]
+    assert wire_after == wire_before
+finally:
+    httpd.shutdown(); httpd.server_close()
+
+# 41) COMPILED COMMON-KNOWLEDGE ROUTING. The optional artifact shortens only
+#     common ungated resolver candidates, restores exact live entries after
+#     selection, and falls back to the original full-corpus prompt whenever
+#     disabled, missing, stale, or malformed.
+catalogue_path = tmp / "ashworth-knowledge-cache.yaml"
+compile_sources = knowledge_cache.common_ungated_sources(pack)
+compiled_routes = []
+for index, source in enumerate(compile_sources):
+    content = source["entry"].get("content", "")
+    if "constable's list" in content:
+        route = ("Sir Edmund's locked gun cabinet; weapons, key, police "
+                 "inventory, constable, dawn access")
+    else:
+        route = ("Lady Constance Ashworth; manor's recently widowed mistress "
+                 "and public household role")
+    compiled_routes.append({"id": index, "routing": route})
+compile_cfg = {
+    **CFG,
+    "knowledge_cache": {
+        "enabled": True,
+        "compression": {
+            "provider": "ollama",
+            "model": "large-context-router",
+            "temperature": 0.1,
+            "max_tokens": 9000,
+        },
+    },
+}
+REPLIES += [json.dumps({"routes": compiled_routes})]
+written = knowledge_cache.write_catalogue(
+    pack, compile_cfg, setting=compile_cfg["knowledge_cache"],
+    output=catalogue_path, level=3)
+assert written == catalogue_path
+catalogue_data = yaml.safe_load(catalogue_path.read_text(encoding="utf-8"))
+assert catalogue_data["format"] == 2 and catalogue_data["level"] == 3
+assert catalogue_data["entries"]
+assert TAGS[-1] == "knowledge-compile"
+assert CALL_CONFIGS[-1]["provider"] == "ollama"
+assert CALL_CONFIGS[-1]["model"] == "large-context-router"
+assert CALL_CONFIGS[-1]["temperature"] == 0.1
+assert CALL_CONFIGS[-1]["max_tokens"] == 9000
+assert "times, dates, quantities" in PROMPTS[-1]
+assert "Do not merely copy the opening words" in PROMPTS[-1]
+assert "Brings the Cocoa" not in PROMPTS[-1]  # named scope is never compiled
+assert "YOU KILLED HIM" not in PROMPTS[-1]    # private/gated knowledge excluded
+assert all(
+    source["entry"].get("scope", "common") == "common"
+    and not source["entry"].get("when")
+    for source in knowledge_cache.common_ungated_sources(pack))
+
+# Invalid model output cannot replace the last good artifact.
+good_catalogue_text = catalogue_path.read_text(encoding="utf-8")
+over_budget_routes = [dict(route) for route in compiled_routes]
+over_budget_routes[0]["routing"] = " ".join(
+    f"word{index}" for index in range(21))
+for bad_routes in (
+        compiled_routes[:-1],
+        compiled_routes + [compiled_routes[0]],
+        over_budget_routes,
+        [{"id": "zero", "routing": "not an integer id"}],
+):
+    REPLIES += [json.dumps({"routes": bad_routes})]
+    try:
+        knowledge_cache.write_catalogue(
+            pack, compile_cfg, setting=compile_cfg["knowledge_cache"],
+            output=catalogue_path, level=2)
+        assert False, "invalid compression output must fail"
+    except knowledge_cache.KnowledgeCacheError:
+        pass
+    assert catalogue_path.read_text(encoding="utf-8") == good_catalogue_text
+
+# Level zero is an explicit no-model, full-text catalogue.
+level_zero_path = tmp / "full-knowledge-cache.yaml"
+compile_tag_count = TAGS.count("knowledge-compile")
+knowledge_cache.write_catalogue(
+    pack, compile_cfg, setting=compile_cfg["knowledge_cache"],
+    output=level_zero_path, level=0)
+assert TAGS.count("knowledge-compile") == compile_tag_count
+level_zero_data = yaml.safe_load(level_zero_path.read_text(encoding="utf-8"))
+assert level_zero_data["compiler"]["model"] is None
+assert any(
+    "constable's list" in entry["routing"]
+    for entry in level_zero_data["entries"])
+
+gcache, stcache = game(
+    knowledge_resolver=True, knowledge_cache=str(catalogue_path))
+assert gcache.knowledge_cache_status["active"]
+cache_corpus = pack.shared_knowledge_corpus(
+    pack.characters()["butler"], gcache._knowledge_entities(), state=stcache,
+    game_vars=pack.vars(), manifest=manifest)
+cabinet_index = next(
+    i for i, (_, _, entry) in enumerate(cache_corpus)
+    if "constable's list" in entry.get("content", ""))
+REPLIES += [json.dumps({"relevant": [cabinet_index]}), char()]
+gcache.talk(
+    "butler", "What weapon storage is kept here?",
+    world={"location": "study", "accessible_items": []}, tone="probing")
+cache_resolver_prompt = next(
+    p for p, t in reversed(list(zip(PROMPTS, TAGS)))
+    if t == "knowledge:butler")
+assert "route=Sir Edmund's locked gun cabinet" in cache_resolver_prompt
+assert "constable's list" not in cache_resolver_prompt
+assert "Brings the Cocoa" in cache_resolver_prompt  # named scope stays live
+assert "constable's list" in PROMPTS[-1]            # exact YAML restored
+
+# Disabled mode is byte-for-byte the original full-content resolver input.
+gcache_off, _ = game(knowledge_resolver=True, knowledge_cache=False)
+REPLIES += [json.dumps({"relevant": []}), char()]
+gcache_off.talk(
+    "butler", "What weapon storage is kept here?",
+    world={"location": "study", "accessible_items": []}, tone="probing")
+off_resolver_prompt = next(
+    p for p, t in reversed(list(zip(PROMPTS, TAGS)))
+    if t == "knowledge:butler")
+assert "constable's list" in off_resolver_prompt
+assert "route=Sir Edmund's locked gun cabinet" not in off_resolver_prompt
+gcache_nested_off, _ = game(knowledge_cache={
+    "enabled": False,
+    "path": str(catalogue_path),
+    "compression": {"model": "large-context-router"},
+})
+assert gcache_nested_off.knowledge_cache_status == {
+    "enabled": False, "active": False}
+
+# A stale artifact never partially applies: status records the fallback and
+# the resolver receives the complete original corpus.
+stale_data = dict(catalogue_data)
+stale_data["source_hash"] = "stale"
+stale_path = tmp / "stale-knowledge-cache.yaml"
+stale_path.write_text(
+    yaml.safe_dump(stale_data, sort_keys=False), encoding="utf-8")
+gstale, _ = game(
+    knowledge_resolver=True, knowledge_cache=str(stale_path))
+assert not gstale.knowledge_cache_status["active"]
+assert "stale" in gstale.knowledge_cache_status["fallback"]
+REPLIES += [json.dumps({"relevant": []}), char()]
+gstale.talk(
+    "butler", "What weapon storage is kept here?",
+    world={"location": "study", "accessible_items": []}, tone="probing")
+stale_prompt = next(
+    p for p, t in reversed(list(zip(PROMPTS, TAGS)))
+    if t == "knowledge:butler")
+assert "constable's list" in stale_prompt and "route=Sir Edmund" not in stale_prompt
+
+gmissing, _ = game(
+    knowledge_resolver=True,
+    knowledge_cache=str(tmp / "missing-knowledge-cache.yaml"))
+assert not gmissing.knowledge_cache_status["active"]
+REPLIES += [json.dumps({"relevant": []}), char()]
+gmissing.talk(
+    "butler", "What weapon storage is kept here?",
+    world={"location": "study", "accessible_items": []}, tone="probing")
+missing_prompt = next(
+    p for p, t in reversed(list(zip(PROMPTS, TAGS)))
+    if t == "knowledge:butler")
+assert "constable's list" in missing_prompt and "route=Sir Edmund" not in missing_prompt
+
 assert not REPLIES, f"unconsumed stub replies: {REPLIES}"
 assert not EXAMINE_RESOLUTIONS, (
     f"unconsumed examine resolver replies: {EXAMINE_RESOLUTIONS}")
-print("ALL DARPS SMOKE TESTS PASSED (39 groups)")
+print("ALL DARPS SMOKE TESTS PASSED (41 groups)")

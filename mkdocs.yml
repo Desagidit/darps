@@ -68,6 +68,7 @@ nav:
       - Create a Pack: setup/first-pack.md
       - Connect a Host: setup/connect-host.md
       - Config Reference: setup/configuration.md
+      - CLI Reference: setup/cli-reference.md
   - Concepts:
       - Mental Model: concepts/index.md
       - Knowledge: concepts/knowledge.md

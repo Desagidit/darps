@@ -249,6 +249,39 @@ semantic or indirect matches from the safe corpus. The resolver never sees
 entries removed by scope or `when` gates, returned indexes are engine-validated,
 and its choices can only add to deterministic retrieval. It is off by default.
 
+Large packs may compile the immutable `common`, ungated subset into an
+inspectable routing catalogue:
+
+```bash
+darps compile-knowledge <pack> --config config.yaml --level 2
+```
+
+This writes `<pack>/knowledge-cache.yaml` by default. Level `0` copies full
+routing text without a model call. Levels `1`, `2`, and `3` make exactly one
+author-time model call and require semantic routes of at most 40, 20, and 12
+words per entry respectively. The compiler model is separately configurable
+under `knowledge_cache.compression`; it may be a larger, longer-context model
+than either runtime model.
+
+The compiler MUST return every stable input id exactly once. Missing,
+duplicate, malformed, empty, or over-budget routes fail compilation, and a
+previous artifact MUST remain untouched. Routes should preserve named
+entities, relationships, ownership, actions, routines, times, quantities,
+unusual details, and likely player paraphrases rather than copying or
+truncating the opening words.
+
+With both `knowledge_resolver: true` and an enabled `knowledge_cache`, compact
+catalogue routes replace only those entries' text in the resolver prompt. A
+selected route is mapped back to the exact live YAML entry before briefing
+assembly or reveal authority is derived. Named-scope entries, any entry with a
+non-empty `when`, and deterministic retrieval always remain live.
+
+The artifact carries a hash of its complete contributing source. Missing,
+stale, malformed, incomplete, or unreadable artifacts MUST transparently fall
+back to the ordinary full-corpus resolver. The cache is an optimization only:
+enabling, disabling, deleting, or corrupting it cannot change scope, gates,
+selected-entry validation, briefing wording, or reveal authority.
+
 Use `common` sparingly for genuinely universal background knowledge. Prefer a
 named scope such as `household`, `guild`, or `faculty` whenever the audience is
 large but bounded.
@@ -377,15 +410,18 @@ Engines strip the block from displayed prose and validate every field.
 
 ## 11. Prompt overrides
 
-Any of `classifier.txt`, `knowledge.txt`, `examine.txt`, `attitudes.txt`,
-`persona.txt`, `character.txt`, or `narrator.txt` in
+Any of `classifier.txt`, `knowledge.txt`, `knowledge_compile.txt`,
+`examine.txt`, `attitudes.txt`,
+`persona.txt`, `character.txt`, `narrator.txt`, or `narrate.txt` in
 `<pack>/prompts/` replaces the engine default. Templates use
 `{placeholder}` substitution; `{{` and `}}` escape literal braces. Overrides
 MUST preserve the response contract stated by the corresponding default:
-`knowledge.txt` and `examine.txt` return relevant candidate indexes,
+`knowledge.txt` and `examine.txt` return relevant candidate indexes;
+`knowledge_compile.txt` returns exactly one `{id, routing}` object per input,
 classifier/adjudication prompts return their JSON shapes, and
-character/narrator prompts preserve the events contract (§10). The engine
-parses responses identically regardless of template origin.
+character/examination-narrator prompts preserve the events contract (§10).
+`narrate.txt` returns prose only and MUST NOT request events. The engine parses
+responses identically regardless of template origin.
 
 ## 12. Aliases
 
@@ -401,16 +437,27 @@ either a location or an item; they do not identify the entity itself.
 
 ## 13. The runtime API
 
-DARPS exposes two response calls. The host supplies the target; DARPS never guesses
-one, so cross-reference confusion ("asked *about* X, answered as X") is
-structurally impossible.
+DARPS exposes two player-input response calls and one display-only narration
+call. The host supplies every addressee or examination target; DARPS never
+guesses one, so cross-reference confusion ("asked *about* X, answered as X")
+is structurally impossible.
 
 ```python
 Game.talk(character_id, message, *, world=None, tone=None) -> result
 Game.examine(target, message="", *, world=None, tone=None) -> result
      # target: an accessible item id/name/alias, the current location, or
      # (unless strict_items is true) a loose noun within the current location
+Game.narrate(instruction="", *, world=None, tone=None) -> result
+     # host-directed general scene prose; reads narrative state and world,
+     # but never changes state or treats the instruction as player input
 ```
+
+`narrate()` defaults to a brief current-scene description and neutral tone.
+It does not increment `turn`; run screening, attitude, persona, knowledge, or
+examine adjudication; change facts, tracks, persona, canon, conversations, or
+hint pacing; or autosave. Its result has `speaker: None` and empty delta
+collections. A host event that establishes truth uses `grant_fact()`,
+`add_canon()`, or another authoritative host system separately.
 
 Three host-authority writes complete the surface — no LLM call, no world
 snapshot; they let the game push what happened *outside* conversation into
@@ -474,9 +521,10 @@ mirrors whatever it cares about (a revealed fact might advance a quest).
 
 ### Streaming
 
-`Game.talk_stream(...)` and `Game.examine_stream(...)` are streaming twins of
-the two response calls, for hosts that want prose to appear as it is generated
-instead of after the full reply. They are generators of events:
+`Game.talk_stream(...)`, `Game.examine_stream(...)`, and
+`Game.narrate_stream(...)` are streaming twins of the response calls, for
+hosts that want prose to appear as it is generated instead of after the full
+reply. They are generators of events:
 
 ```python
 {"type": "text", "text": "<prose chunk>"}     # zero or more
@@ -492,8 +540,10 @@ Normative semantics:
   MUST NOT infer state changes from streamed prose.
 - `done.result.prose` is the canonical stripped prose; it normally equals
   the concatenated text chunks, and clients may reconcile against it.
-- Same assembly, same gate, same state writes as `talk()` — streaming
-  changes when the player sees words, never what becomes true.
+- Each streaming method has the same semantics as its blocking twin.
+  Streaming changes when the host sees words, never what becomes true.
+- `narrate_stream()` has no events contract or state writes; its final deltas
+  are always empty.
 
 ### The classifier
 
@@ -550,6 +600,15 @@ guardrails: true             # screen every message via the classifier
 knowledge_resolver: false    # semantic retrieval over the addressee's already
                              #   secrecy-filtered shared-knowledge corpus;
                              #   adds one classifier call per talk turn
+knowledge_cache:
+  enabled: false
+  path: knowledge-cache.yaml
+  compression:
+    provider: ...            # optional; defaults to response provider
+    model: ...               # optional; defaults to response model
+    base_url: ...            # optional endpoint for the compression provider
+    temperature: 0.2
+    max_tokens: 16000
 examine_resolver: false      # semantic matching over the resolved entity's
                              #   eligible trigger groups; adds at most one
                              #   classifier call per examine turn
@@ -597,6 +656,8 @@ POST /talk/stream  same body -> text/event-stream:
                    event: done + data: <result dict> (final)
 POST /examine   {session,target,message?,world?,tone?}      -> result dict
 POST /examine/stream same body -> text/event-stream, same contract as talk
+POST /narrate   {session,instruction?,world?,tone?}         -> result dict
+POST /narrate/stream same body -> text/event-stream; display-only, empty deltas
 POST /adjust_track {session,character,change?|value?,track?} -> track delta
 POST /grant_fact {session,fact}                    -> {"deltas":{"facts_learned": [...]}}
 POST /add_canon {session,text}                     -> {"deltas":{"canon_added": [...]}}

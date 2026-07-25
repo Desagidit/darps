@@ -12,7 +12,8 @@ The normal lifecycle is:
 2. Inspect secret-safe capabilities through `GET /pack` if building a generic
    client.
 3. Create or restore a session with `POST /session`.
-4. Call `/talk`, `/examine`, or their streaming variants.
+4. Call `/talk` or `/examine` for player input. Call `/narrate` for
+   display-only host-directed scene prose. Each has a streaming variant.
 5. Mirror useful validated deltas into host systems.
 6. Persist `GET /state` in the host save slot.
 7. Close unused sessions.
@@ -47,3 +48,7 @@ Host events can update narrative memory without an LLM call:
 
 Flags do not need a mutation endpoint: they remain host-owned and are supplied
 with subsequent world snapshots.
+
+General narration is not a host mutation. It can describe facts and canon
+already known to DARPS, but it cannot establish them. Record a cutscene's
+truth first, then call `/narrate` to present it.

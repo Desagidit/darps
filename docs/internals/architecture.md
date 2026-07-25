@@ -8,6 +8,7 @@ flowchart TB
     Server["server.py\nHTTP sessions"] --> Orchestrator["orchestrator.py\ncall pipeline"]
     CLI["cli.py\ndev harness"] --> Orchestrator
     Orchestrator --> Content["content.py\npack loading + scoped context"]
+    Orchestrator --> KCache["knowledge_cache.py\ncompiled routing catalogue"]
     Orchestrator --> LLM["llm.py\nproviders + logs"]
     Orchestrator --> Validate["validate.py\nevent gate"]
     Validate --> Conditions["conditions.py\nclosed gate vocabulary"]
@@ -22,6 +23,7 @@ flowchart TB
 |---|---|---|
 | `orchestrator.py` | Call pipelines, context selection, pacing, deltas | Pack-specific story logic |
 | `content.py` | Pack loading, prompt layering, knowledge rendering | State mutation |
+| `knowledge_cache.py` | Compile and validate optional common-lore routing catalogues | Replace exact authored knowledge or authorize reveals |
 | `conditions.py` | Closed runtime condition evaluation | Arbitrary expressions |
 | `validate.py` | Filtering model-proposed events | Unvalidated state writes |
 | `state.py` | State shape, normalization, local harness saves | Host world state |

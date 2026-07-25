@@ -24,6 +24,15 @@ guardrails: true          # screen every message for meta/injection attempts
 knowledge_resolver: false # optional semantic retrieval across the character's
                           # already secrecy-filtered shared knowledge; costs one
                           # classifier call per talk turn
+knowledge_cache:
+  enabled: false          # true uses the compiled routing catalogue at runtime
+  path: knowledge-cache.yaml
+  compression:            # used only by `darps compile-knowledge`
+    provider: null        # null/omitted inherits the response provider
+    model: null           # null/omitted inherits `model`
+    base_url: null        # normally omit; useful for a separate large model
+    temperature: 0.2
+    max_tokens: 16000
 examine_resolver: false   # optional semantic matching over the resolved
                           # entity's active trigger groups; at most one
                           # classifier call per examine turn

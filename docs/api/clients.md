@@ -18,11 +18,19 @@ result = game.talk(
     world={"location": "workshop", "accessible_items": ["ledger"]},
 )
 print(result["prose"])
+
+scene = game.narrate(
+    "Describe the workshop as the lamps fail.",
+    world={"location": "workshop", "accessible_items": ["ledger"]},
+    tone="ominous",
+)
+print(scene["prose"])
 ```
 
 Library methods mirror the HTTP surface:
 
-- `talk`, `talk_stream`, `examine`, `examine_stream`;
+- `talk`, `talk_stream`, `examine`, `examine_stream`, `narrate`,
+  `narrate_stream`;
 - `adjust_track`, `grant_fact`, `add_canon`;
 - direct access to the versioned `game.state` blob.
 
@@ -42,6 +50,8 @@ var world = new {
     flags = new { workshop_unlocked = true }
 };
 var result = await darps.Talk(session, "mira", "When did it arrive?", world);
+var scene = await darps.Narrate(
+    session, "Describe the workshop as the lamps fail.", world, "ominous");
 ```
 
 The reference client includes streaming, save-state access, pack metadata,

@@ -53,6 +53,24 @@ sequenceDiagram
     D-->>H: narration + validated deltas
 ```
 
+## General narration
+
+```mermaid
+sequenceDiagram
+    participant H as Host
+    participant D as DARPS
+    participant N as Narration model
+
+    H->>D: narrate(instruction, world, tone)
+    D->>D: assemble safe scene + learned state
+    D->>N: host direction + display-only prompt
+    N-->>D: prose only
+    D-->>H: narration + empty deltas
+```
+
+This path has no player-input classifiers or event gate because it has no
+mutation surface. It does not advance turns, histories, persona, or pacing.
+
 ## Character context assembly
 
 ```mermaid
@@ -61,6 +79,7 @@ flowchart TD
     Character["voice + background"] --> Briefing
     Own["condition-passing own knowledge"] --> Briefing
     AllShared["all shared knowledge"] --> Safe["scope + condition filter"]
+    Cache["optional compiled common routes"] --> Relevant
     Safe --> Relevant["immediate + lexical + optional semantic retrieval"]
     Relevant --> Briefing
     Canon["enabled canon"] --> Briefing
@@ -74,6 +93,11 @@ flowchart TD
 Ground-truth variables never enter prompts directly. They only decide whether
 gated content exists in the assembled context.
 
+The compiled route catalogue is used only inside optional semantic retrieval.
+Its selections are translated back to exact entries from `Safe` before the
+briefing and reveal authority are built. Cache failure removes the `Cache`
+edge and leaves the original flow unchanged.
+
 ## Streaming truth boundary
 
 ```mermaid
@@ -85,3 +109,6 @@ flowchart LR
     Validator --> State
     State -->|"done + result"| Host
 ```
+
+General narration uses the same fence suppression and `done` framing, but
+skips validation and state because its final deltas are always empty.

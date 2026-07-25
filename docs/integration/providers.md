@@ -1,10 +1,15 @@
 # Provider configuration
 
-`config.yaml` has two model slots:
+`config.yaml` has two runtime model slots:
 
 - `model` generates character and narrator prose;
 - `classifier_model` performs secret-free screening, mention resolution,
   attitude adjudication, and persona adjudication.
+
+An optional third model is used only by the author tool:
+
+- `knowledge_cache.compression.model` creates semantic routing labels when
+  running `darps compile-knowledge`.
 
 ```yaml
 provider: openai
@@ -47,6 +52,22 @@ unless `classifier_base_url` is also set.
 Keep secrets in `.env`, never in a pack. A small local classifier model is
 often sufficient, but response quality and strict JSON compliance must be
 playtested. Every call is recorded in `logs/calls.jsonl`.
+
+The knowledge compiler can use a different, larger-context provider without
+affecting shipped runtime cost:
+
+```yaml
+knowledge_cache:
+  enabled: true
+  compression:
+    provider: openai
+    model: large-context-model
+    temperature: 0.2
+    max_tokens: 16000
+```
+
+Omitted compression fields inherit the response provider and model. The
+compiler makes one call for levels 1–3 and logs it as `knowledge-compile`.
 
 Behavior controls such as tracks, hints, canon, guardrails, history, mention
 resolution, and flags files are documented in the

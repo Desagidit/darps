@@ -1,10 +1,10 @@
 # Knowledge
 
 Conversation is complicated. Characters have personality, changing attitudes, secrets, agendas.
-LLMs are also complicated. You have to be really careful about what you tell them in order to get a reliable response.
+LLMs are also complicated. They are trusting, speculative, clever fools and must be handled with care.
 
 When the LLM is asked for an in-character response, DARPS gives it a briefing.
-The briefing is comprised of knowledge that comes from the current pack. It is deliberately separate from descriptions, player discoveries, and global narration.
+The briefing is comprised of information that comes from the current pack. It is deliberately separate from descriptions, player discoveries, and global narration.
 
 DARPS uses a secrecy-first pipeline:
 
@@ -17,28 +17,28 @@ flowchart LR
     E --> F["Character briefing and reveal authority"]
 ```
 
-This order matters. The relevance selector never sees knowledge the addressed character is not permitted to know.
+This order matters. The knowledge resolver never sees knowledge the addressed character is not permitted to know. Of this safe knowledge, only entries strictly relevant to the current request is kept. This is how DARPS presents a deluge of information hitting the LLM every single call.
 
 From the safe corpus, DARPS always includes entries about the addressee, the current location, and accessible items. It also matches subject names, aliases, and meaningful words in entry content against the player's message.
 
-For indirect references or paraphrases, enable:
+For indirect references or paraphrases, `enable knowledge_resolver` in the config.yaml:
 
-```yaml config.yaml
+```yaml
 knowledge_resolver: true
 ```
 
 Consequently, asking Mrs Ashworth "Who makes the cocoa?" can retrieve Halloway's entry even when Halloway is unnamed in the request. This is because Mrs Ashworth has the `household` scope.
 In the `butler` file it is defined that everyone in `household` knows some basic facts about him.
 
-```
+```yaml
 shared_knowledge:
     - scope: household
       content: >
         Is the butler. Tends to Sir Edmund. Brings the Cocoa. Has served for decades.
 ```
 
-This makes one additional classifier call per talk turn. This will very slightly increase response time and cost. But it is worth it for a seamless user experience.
-It receives only the already filtered safe corpus and returns candidates to grab extra knowledge from.
+This makes one additional classifier call per talk turn. This will very slightly increase response time and cost. But it is worth it for a more believable conversation.
+The knowledge resolver receives only the already filtered safe corpus and returns candidates to grab extra knowledge from.
 DARPS rejects invalid indexes and combines valid selections with deterministic matches. Leave it off when exact topical matching is sufficient or minimizing latency is more important.
 
 ## The 4 layers
@@ -110,6 +110,9 @@ This suits outsiders, amnesiacs, isolated beings, or other characters who
 should not inherit ordinary public knowledge. `common_knowledge` defaults to
 `true`.
 
+## Building the briefing
+
+![DARPS Briefing](../images/darps_knowledge.png)
 
 ## Example Flow and Briefing
 
@@ -239,109 +242,79 @@ Then output an events block containing:
 - story relevance from 0 to 2.
 ```
 
+## Compiling large common-knowledge catalogues
+
+In a large pack, the safe corpus can contain hundreds or thousands of universal entries. The resolver still makes one call, but sending every full entry makes that call unnecessarily large.
+
+DARPS comes with utilities to help lower the impact of large packs. By using the CLI, you can compile the static common scope shared_knowledge:
+
+```bash
+darps compile-knowledge packs/my-game --config config.yaml --level 2
+```
+
+The command writes an inspectable `knowledge-cache.yaml` beside the pack. Its entries look like:
+
+```yaml
+- source: 46d2...f81
+  subject: butler
+  name: Mr. Halloway
+  routing: >
+    Halloway prepares Sir Edmund's nightly cocoa; evening household routine,
+    drinks service, and who makes or delivers the cocoa.
+```
+
+When the knowledge-cache.yaml is created, you can enable DARPS to use it in the config.yaml:
+
+```yaml
+knowledge_resolver: true
+knowledge_cache: true
+```
+
+Levels 1–3 use a single author-time LLM call over all eligible entries. Give that job its own capable, long-context model when appropriate:
+
+```yaml
+knowledge_cache:
+  enabled: true
+  path: knowledge-cache.yaml
+  compression:
+    provider: openai
+    model: large-context-model
+    temperature: 0.2
+    max_tokens: 16000
+```
+
+The compiler asks for semantic retrieval descriptions, not leading-word truncations. Each route must preserve names, relationships, ownership, routines, events, times, quantities, unusual details, and likely player paraphrases. The generated file remains inspectable and editable.
+Advanced packs may override `prompts/knowledge_compile.txt`; the override must retain the exact `{id, routing}` JSON contract.
+
+The resolver sees the compact routing line. If it selects that line, DARPS loads the exact current `shared_knowledge` entry from the butler's YAML and puts that original text into the briefing.
+The generated route is therefore a card-catalogue label, not story content (but will resolve to the original story content once retrieved). This saves significant effort of the knowledge_resolver for large packs.
+
+Only entries with implicit or explicit `scope: common` and no active `when` list are compiled. Named scopes and conditional entries are still evaluated and rendered in full on every call. Deterministic retrieval is unchanged.
+
+The artifact records a source hash. Any source edit makes it stale. Missing, stale, malformed, or partial artifacts automatically fall back to the normal full resolver, so the cache cannot weaken secrecy or alter reveal authority.
+
+!!! Important
+Regenerate the cache after editing or contributing common knowledge.
+
+Compression levels control the routing label, not the eventual briefing:
+
+| Level | Resolver representation |
+|---:|---|
+| `0` | Full authored content; no compilation model call |
+| `1` | Semantic route of at most 40 words |
+| `2` | Semantic route of at most 20 words |
+| `3` | Semantic route of at most 12 words |
+
+The model must return every input ID exactly once. An omitted, duplicated, empty, malformed, or over-budget route fails the command, and the previous artifact remains unchanged.
+
 ## Knowledge Gates
 
 Sometimes you want to prevent knowledge under certain conditions, this is called 'gating' the knowledge.
 
-Knowledge can be gated by including a `when` condition. Gated knowledge never enters briefings.
-Between `scope` and `when` you can isolate knowledge and guarantee a model does not get information it could misuse.
+`knowledge` and `shared_knowledge` can be gated by including a `when` condition or by using `scope`. Gated knowledge never enters briefings.
+Between `scope` and `when` you can isolate knowledge and guarantee a model does not get information it could misuse..
 
-`when` can be used with both `knowledge` and `shared_knowledge`.
-
-### Gating with Flags
-
-The simplest gate is using flags. Flags are entirely host-owned and are not declared in, or managed by, DARPS. They are (optionally) passed by the game in the [/talk call](../api/http-reference.md#post-talk). These are good for when certain knowledge relies on binary game state changes.
-
-```
-knowledge:
-  - content: >
-      The cellar door is now open. You may discuss what is inside.
-    when:
-      - {flag: cellar_open}
-```
-
-You can check for negative flags as well.
-
-```
-knowledge:
-  - content: >
-      You insist the cellar has been sealed for years.
-    when:
-      - {not: {flag: cellar_open}}
-```
-
-### Gating with Facts
-
-Similar to Flags, Facts check if a binary condition is met. Flags are best used when the thing you want to check against relies on analysing character dialogue or examining pack items/locations.
-
-```
-knowledge:
-  - content: >
-      The player has found the torn letter. You can no longer deny knowing
-      about the new will.
-    when:
-      - {fact_learned: torn_letter}
-```
-
-### Gating with Variables
-
-Packs have variables declared in vars.yaml. These are generally used to swap around key game details. For example, if you wanted to quickly change who the culprit is. Or who holds a key item.
-In these cases, vars can be tested against as key-value pairs. Be aware that `self` can be used if that var holds the entity ID in question.
-
-```
-shared_knowledge:
-  - scope: household
-    content: Her sleeping medicine went missing shortly before the murder.
-    when:
-      - {var: culprit, is: self}
-```
-
-### Gating with Tracks
-
-Sometimes people won't give up knowledge unless they're scared or trust you. You can define any number of character tracks to gauge how that character is feeling or progressing.
-
-```
-knowledge:
-  - content: >
-      You now trust the player enough to admit that you saw Lady Ashworth
-      enter the study.
-    when:
-      - track_gte:
-          track: disposition
-          value: 1
-```
-
-By default, the tracks refer to `self` which means it'll check against the entity to which the file belongs.
-It's possible to gate using the track of a different entity altogether. This is useful for `shared_knowledge`.
-
-```
-shared_knowledge:
-  - scope: household
-    content: >
-      Halloway has begun privately telling trusted investigators about the argument.
-    when:
-      - track_gte:
-          track: disposition
-          of: butler
-          value: 1
-```
-
-### Combining gates
-
-You can mix and match your gates to lock knowledge behind more complex requirements.
-
-```
-knowledge:
-  - content: >
-      You are prepared to explain what happened in the cellar.
-    when:
-      - {flag: cellar_open}
-      - {fact_learned: muddy_footprints}
-      - track_gte:
-          track: disposition
-          value: 1.5
-```
-
+See [Concept: Gates](../concepts/gates.md) for more information on how to gate knowledge.
 
 ## Reveals and authority
 

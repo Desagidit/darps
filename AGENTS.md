@@ -23,6 +23,7 @@ call. Game content is a declarative "pack".
   `validate.py` (runtime gate), `conditions.py` (closed condition vocabulary),
   `lint.py` (static validator), `content.py` (pack loader), `server.py`
   (localhost HTTP layer + session registry), `llm.py` (providers + call log),
+  `knowledge_cache.py` (compiled common-lore routing catalogues),
   `prompts/` (default templates), `scaffold.py`, `cli.py`
 - `packs/ashworth-manor/` — reference pack (1923 murder mystery)
 - `clients/` — reference host clients (C# for Unity); document the wire

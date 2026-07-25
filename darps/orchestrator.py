@@ -11,9 +11,11 @@ DARPS does NOT coordinate the game. It moves no items, tracks no progress.
 The host owns the world and signals progress through FLAGS (injected per call
 and/or a flags file it keeps up to date); pack knowledge gates on those flags.
 
-Two calls:
+Player-input calls:
   talk(character_id, message, world=?, tone=?) -> a character speaks
   examine(target, message=?, world=?, tone=?) -> the narrator describes/reveals
+Display-only call:
+  narrate(instruction=?, world=?, tone=?) -> read-only scene prose
 
 Both return the result dict — the whole client boundary:
   {"speaker": str|None, "prose": str, "tone": str,
@@ -23,7 +25,8 @@ from pathlib import Path
 
 import yaml
 
-from . import conditions, content, llm, state as state_mod, validate
+from . import (conditions, content, knowledge_cache, llm, state as state_mod,
+               validate)
 from .content import Pack
 
 HINT_STYLES = {"subtle", "pointed", "forthcoming"}
@@ -34,6 +37,28 @@ class Game:
         self.cfg = cfg          # runtime config: provider + behavior toggles
         self.pack = pack        # all game content lives here
         self.state = state      # narrative memory only (see state.py)
+        self._knowledge_routes = {}
+        self.knowledge_cache_status = {"enabled": False, "active": False}
+        cache_setting = cfg.get("knowledge_cache", False)
+        if cache_setting:
+            try:
+                routes, path = knowledge_cache.load_catalogue(
+                    pack, cache_setting)
+                if path is not None:
+                    self._knowledge_routes = routes
+                    self.knowledge_cache_status.update({
+                        "enabled": True,
+                        "active": True,
+                        "path": str(path),
+                        "entries": len(routes),
+                    })
+            except Exception as exc:
+                # Optimization only: secrecy and behavior fall back to the
+                # existing exact full-corpus resolver on every failure.
+                self.knowledge_cache_status.update({
+                    "enabled": True,
+                    "fallback": str(exc),
+                })
         self._ensure_track_starts()
         self._ensure_persona_defaults()
 
@@ -185,6 +210,46 @@ class Game:
         result = self._apply_examine(ctx, raw, reading)
         self._stage_persona(result, persona, "examine", message)
         yield {"type": "done", "result": self._finish(result, manifest, before)}
+
+    def narrate(self, instruction: str = "", *,
+                world: dict | None = None, tone: str | None = None) -> dict:
+        """Display-only host narration. It reads state but never mutates it."""
+        manifest = self.pack.manifest()
+        view = self._view(world, manifest)
+        ctx = self._prepare_general_narration(
+            instruction, tone, manifest, view)
+        raw = llm.call(self.cfg, ctx["prompt"], tag="narrate")
+        return self._apply_general_narration(ctx, raw)
+
+    def narrate_stream(self, instruction: str = "", *,
+                       world: dict | None = None, tone: str | None = None):
+        """Streaming twin of narrate(): prose chunks followed by one result."""
+        manifest = self.pack.manifest()
+        view = self._view(world, manifest)
+        ctx = self._prepare_general_narration(
+            instruction, tone, manifest, view)
+
+        hold = 12
+        pieces, emitted, suppressed = [], 0, False
+        for chunk in llm.call_stream(self.cfg, ctx["prompt"], tag="narrate"):
+            pieces.append(chunk)
+            if suppressed:
+                continue
+            acc = "".join(pieces)
+            fence = acc.find("```")
+            if fence != -1:
+                out = acc[emitted:fence]
+                suppressed = True
+            else:
+                out = acc[emitted:max(emitted, len(acc) - hold)]
+            if out:
+                emitted += len(out)
+                yield {"type": "text", "text": out}
+        raw = "".join(pieces)
+        if not suppressed and emitted < len(raw):
+            yield {"type": "text", "text": raw[emitted:]}
+        yield {"type": "done",
+               "result": self._apply_general_narration(ctx, raw)}
 
     # ------------------------------------------ host-authority writes (no LLM)
     def adjust_track(self, character_id: str, *, change: float | None = None,
@@ -397,8 +462,11 @@ class Game:
             return []
         candidates = "\n".join(
             f"- {index}: subject={subject_name} ({subject_id}); "
-            f"knowledge={entry.get('content', '')}"
+            f"{'route' if route else 'knowledge'}="
+            f"{route or entry.get('content', '')}"
             for index, (subject_id, subject_name, entry) in enumerate(corpus)
+            for route in [self._knowledge_routes.get(
+                knowledge_cache.entry_fingerprint(subject_id, entry))]
         )
         prompt = self.pack.prompt(
             "knowledge", name=char["name"], player_text=message,
@@ -711,6 +779,62 @@ class Game:
                 "tone": reading.get("tone", "neutral"),
                 "story_relevance": events["story_relevance"]}
 
+    # ------------------------------------------------------- general narrator
+    def _prepare_general_narration(self, instruction: str | None,
+                                   tone: str | None, manifest: dict,
+                                   view: dict) -> dict:
+        """Assemble a secret-free, display-only scene narration prompt."""
+        if instruction is not None and not isinstance(instruction, str):
+            raise ValueError("instruction must be a string")
+        if tone is not None and not isinstance(tone, str):
+            raise ValueError("tone must be a string")
+        instruction = (instruction or "").strip() \
+            or "Describe the current scene briefly."
+        tone = (tone or "neutral").strip() or "neutral"
+        loc = self.pack.location(view["location"])
+        facts = self.pack.facts()
+        journal = [
+            facts[fid]["journal_text"].strip()
+            for fid in self.state.get("facts_learned", []) if fid in facts
+        ]
+        location_doc = (
+            f"{loc['name']}: {loc.get('description', '')}\n"
+            f"Scenery you may improvise around: {loc.get('scenery', '')}"
+        )
+        prompt = self.pack.prompt(
+            "narrate",
+            world=self._world(),
+            player_label=manifest.get("player_label", "the player"),
+            location_doc=location_doc,
+            accessible_items=self._accessible_items_doc(view),
+            canon=self._canon_context(),
+            facts_learned="\n".join(f"- {text}" for text in journal) or "(none)",
+            physics_rules=manifest.get(
+                "impossible", "nothing beyond ordinary human ability"),
+            instruction=instruction,
+            tone=tone,
+        )
+        return {"prompt": prompt, "tone": tone}
+
+    @staticmethod
+    def _apply_general_narration(ctx: dict, raw: str) -> dict:
+        """Return display prose with a deliberately empty mutation surface."""
+        prose = llm.strip_events_block(raw)
+        # General narration has no structured-output contract. If a model
+        # nevertheless starts a fenced payload, never surface it to the host.
+        prose = prose.split("```", 1)[0].strip()
+        return {
+            "speaker": None,
+            "prose": prose,
+            "tone": ctx["tone"],
+            "deltas": {
+                "tracks": {},
+                "persona": {},
+                "facts_learned": [],
+                "canon_added": [],
+            },
+        }
+
     def _resolve_examine_target(self, target: str, loc: dict, view: dict):
         """Resolve one authoritative examination target.
 
@@ -889,6 +1013,22 @@ class Game:
         ids = list(dict.fromkeys(view["_accessible_items"]))
         named = [f"{items[i].get('name', i)} (id: {i})" for i in ids if i in items]
         return ", ".join(named) if named else "nothing of note"
+
+    def _accessible_items_doc(self, view: dict) -> str:
+        """Safe descriptive scene objects for display-only narration."""
+        if not view.get("_accessible_items_given"):
+            return "(the host game did not specify; do not dwell on objects)"
+        items = self.pack.items()
+        ids = list(dict.fromkeys(view["_accessible_items"]))
+        lines = []
+        for item_id in ids:
+            item = items.get(item_id)
+            if not item:
+                continue
+            lines.append(
+                f"- {item.get('name', item_id)} (id: {item_id}): "
+                f"{item.get('description', '').strip()}")
+        return "\n".join(lines) if lines else "nothing of note"
 
     def _learn_facts(self, reveal_ids: list[str], facts: dict) -> list[dict]:
         additions = []

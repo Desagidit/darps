@@ -1,7 +1,7 @@
 # Streaming and errors
 
-`/talk/stream` and `/examine/stream` use Server-Sent Events over a POST
-response. Text frames arrive first:
+`/talk/stream`, `/examine/stream`, and `/narrate/stream` use Server-Sent
+Events over a POST response. Text frames arrive first:
 
 ```text
 data: {"type":"text","text":"A bitter almond scent"}
@@ -19,6 +19,9 @@ data: {"speaker":null,"prose":"...","tone":"neutral","deltas":{...}}
 Never infer discoveries or other state from streamed prose. The model's events
 block remains buffered and hidden until the complete response passes
 validation.
+
+`/narrate/stream` is display-only, so its final deltas are always empty and no
+state is changed.
 
 If failure occurs after headers were sent:
 

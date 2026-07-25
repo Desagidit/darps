@@ -23,6 +23,8 @@ Routes (verb responses are the result dict; see SPEC):
                      `event: done` frame carrying the result dict
   POST /examine   {session,target,message?,world?,tone?}
   POST /examine/stream same body -> Server-Sent Events
+  POST /narrate   {session,instruction?,world?,tone?}     display-only prose
+  POST /narrate/stream same body -> Server-Sent Events
   POST /adjust_track {session,character,change?|value?,track?} (no LLM)
   POST /grant_fact {session,fact}                    host-granted fact (no LLM)
   POST /add_canon {session,text}                     host-authored canon (no LLM)
@@ -83,6 +85,11 @@ def _examine(g, d):
                      tone=d.get("tone"))
 
 
+def _narrate(g, d):
+    return g.narrate(d.get("instruction", ""), world=d.get("world"),
+                     tone=d.get("tone"))
+
+
 def _adjust_track(g, d):
     return g.adjust_track(d["character"], change=d.get("change"),
                           value=d.get("value"), track=d.get("track"))
@@ -96,7 +103,7 @@ def _add_canon(g, d):
     return g.add_canon(d["text"])
 
 
-_VERBS = {"talk": _talk, "examine": _examine,
+_VERBS = {"talk": _talk, "examine": _examine, "narrate": _narrate,
           "adjust_track": _adjust_track, "grant_fact": _grant_fact,
           "add_canon": _add_canon}
 
@@ -123,7 +130,8 @@ def _pack_metadata(pack) -> dict:
         "persona": {pid: numeric(spec)
                     for pid, spec in (manifest.get("persona", {}) or {}).items()},
         "capabilities": ["talk", "talk_stream", "examine", "examine_stream",
-                         "tracks", "persona", "journal", "canon"],
+                         "narrate", "narrate_stream", "tracks", "persona",
+                         "journal", "canon"],
     }
 
 
@@ -236,11 +244,13 @@ class _Handler(BaseHTTPRequestHandler):
                     return self._send_error(400, "invalid_state", str(e))
                 return self._send(200, {"session": data.get("session"), "state": game.state})
 
-        if url.path in ("/talk/stream", "/examine/stream"):
+        if url.path in ("/talk/stream", "/examine/stream", "/narrate/stream"):
             # Validate before any bytes go out: once streaming starts, the
             # only failure mode left is closing the connection.
-            required = "character" if url.path == "/talk/stream" else "target"
-            if required not in data:
+            required = ("character" if url.path == "/talk/stream"
+                        else "target" if url.path == "/examine/stream"
+                        else None)
+            if required is not None and required not in data:
                 return self._send_error(400, "bad_request",
                                         f"missing required field '{required}'")
             if url.path == "/talk/stream" and data["character"] not in game.pack.characters():
@@ -252,12 +262,18 @@ class _Handler(BaseHTTPRequestHandler):
             self.end_headers()
             try:
                 with lock:
-                    stream = (game.talk_stream(data["character"], data.get("message", ""),
-                                               world=data.get("world"), tone=data.get("tone"))
-                              if url.path == "/talk/stream" else
-                              game.examine_stream(data["target"], data.get("message", ""),
-                                                  world=data.get("world"),
-                                                  tone=data.get("tone")))
+                    if url.path == "/talk/stream":
+                        stream = game.talk_stream(
+                            data["character"], data.get("message", ""),
+                            world=data.get("world"), tone=data.get("tone"))
+                    elif url.path == "/examine/stream":
+                        stream = game.examine_stream(
+                            data["target"], data.get("message", ""),
+                            world=data.get("world"), tone=data.get("tone"))
+                    else:
+                        stream = game.narrate_stream(
+                            data.get("instruction", ""), world=data.get("world"),
+                            tone=data.get("tone"))
                     for ev in stream:
                         if ev["type"] == "done":
                             self.wfile.write(b"event: done\n")

@@ -44,6 +44,7 @@ POST /talk    {"session": s, "character": "butler", "message": "...",
                "world": {"location": "study", "accessible_items": [...],
                          "flags": {"cabinet_open": true}}}
 POST /examine {"session": s, "target": "snifter", "message": "..."}
+POST /narrate {"session": s, "instruction": "Describe the room as the lights fail."}
 ```
 
 Your game owns the world — location, items, progress flags —
@@ -72,6 +73,7 @@ contract and is included into the site rather than copied.
 python -m darps new packs/my-game    # scaffold a minimal commented pack
 $EDITOR packs/my-game/*.yaml
 python -m darps validate packs/my-game
+python -m darps compile-knowledge packs/my-game --config config.yaml --level 2
 python -m darps play packs/my-game
 ```
 

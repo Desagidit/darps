@@ -6,6 +6,10 @@ respond to the player's meaning, including paraphrases, indirect references,
 nicknames, and common-sense topical connections. Do not select an entry merely
 because it is interesting.
 
+Candidates marked `route` are compact catalogue labels rather than the full
+entry. Select them by relevance in exactly the same way; DARPS will restore
+the exact authored knowledge after your selection.
+
 Player input:
 {player_text}
 

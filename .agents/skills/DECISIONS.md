@@ -390,3 +390,55 @@ Triggerless rules need no semantic judgment, and calls are skipped when no
 unmatched candidates remain. This preserves D1/D2/D9 while allowing natural
 examination language at the same optional one-classifier-call cost profile as
 semantic knowledge retrieval.
+
+## D26. General narration is presentation, not a narrative event
+
+Hosts need atmospheric prose for room entry, transitions, weather, and
+cutscenes that are not player examinations. Routing those moments through
+`examine` would falsely adjudicate persona, discoveries, pacing, and turns.
+The dedicated `narrate(instruction, world, tone)` call therefore reads the
+safe public scene context, learned journal, and enabled canon, but has no
+event-output contract and no state mutation surface.
+
+The instruction is host direction, never player input: narration runs no
+screening, attitude, persona, knowledge, or examination classifier. It does
+not increment turns, add history, reveal facts, add canon, tick hints, or
+autosave. Blocking and streaming forms return the ordinary result envelope
+with `speaker: null` and empty deltas. If a cutscene establishes truth, the
+host first records that truth through `grant_fact`, `add_canon`, flags, or its
+own systems; narration merely presents it. This keeps D1 intact while giving
+hosts a general-purpose writing surface.
+
+## D27. Compile routing labels, never authoritative knowledge
+
+Corpus-wide retrieval solves indirect questions but a very large `common`
+scope can make the optional resolver prompt expensive. Caching a generated
+summary as character knowledge was rejected: compression can erase a detail,
+merge two fact boundaries, or lose `why`/`tell`/`reveals`, allowing an
+optimization to change behavior and authority.
+
+`darps compile-knowledge` instead creates an inspectable routing catalogue for
+only common, ungated shared entries. The resolver may see those compact labels,
+but validated selections are indexes into the current safe corpus and always
+restore exact live YAML before briefing assembly. Named scopes, conditional
+entries, deterministic retrieval, and reveal validation remain unchanged.
+
+Positional keyword truncation was implemented briefly and rejected: preserving
+the first N terms is deterministic but semantically arbitrary, so a crucial
+late detail can disappear solely because of prose order. Levels 1–3 now use one
+author-time LLM call to write semantic routes under explicit 40/20/12-word
+budgets. The compiler prompt requires entities, relationships, ownership,
+events, routines, times, quantities, unusual details, and likely player
+paraphrases. The compression provider/model is independently configurable so
+authors can use a capable long-context model without increasing runtime cost.
+Level 0 remains full text with no call.
+
+The artifact hashes every contributing source and runtime validation requires
+complete coverage. Compilation validates exact ID coverage, uniqueness,
+non-empty text, and budgets, then replaces the artifact atomically; bad model
+output preserves the last good file. Disabled, missing, stale, malformed,
+unreadable, or partial catalogues fall back wholesale to the pre-existing
+full-corpus prompt. Never partially apply a questionable cache. This makes the
+feature a performance optimization with no narrative semantics, preserves
+D1/D2/D21, and leaves world summarisation for a later author-approved design
+because `world.md` currently mixes compressible lore with hard rules.

@@ -17,6 +17,12 @@
 | `canon` | `true` | Request, retain, and reuse canon additions |
 | `guardrails` | `true` | Screen meta/injection and physics violations |
 | `knowledge_resolver` | `false` | Semantic retrieval over the addressee's secrecy-safe shared knowledge |
+| `knowledge_cache` | `false` | Optional compiled routing catalogue for common, ungated resolver candidates |
+| `knowledge_cache.compression.model` | inherits `model` | One-time semantic catalogue compiler model |
+| `knowledge_cache.compression.provider` | inherits `provider` | Provider for the catalogue compiler |
+| `knowledge_cache.compression.base_url` | provider default | Optional compiler endpoint override |
+| `knowledge_cache.compression.temperature` | `0.2` | Catalogue compiler temperature |
+| `knowledge_cache.compression.max_tokens` | `16000` | Maximum compiler output, sized for many routes |
 | `examine_resolver` | `false` | Semantic matching over the resolved entity's currently eligible examination trigger groups |
 | `strict_items` | `false` | Reject unknown examination targets instead of treating them as parts of the current location |
 | `hints.after_turns` | `6` | Relevant fruitless turns before a hint |
@@ -38,6 +44,7 @@ tracks: true
 canon: false
 guardrails: true
 knowledge_resolver: false
+knowledge_cache: false
 examine_resolver: false
 strict_items: false
 hints: {after_turns: 6, style: subtle}
@@ -53,3 +60,36 @@ for a custom classifier endpoint such as an OpenAI-compatible server.
 `forthcoming` is the only hint style that changes mechanics: it relaxes
 `track_gte` fact gates by one. Entities may opt out of hints with
 `hints: false` in their pack file.
+
+`knowledge_cache` matters only with `knowledge_resolver: true`. Set it to
+`true` for the default `<pack>/knowledge-cache.yaml`, to a path string, or to
+a mapping. Relative paths are resolved from the pack directory:
+
+```yaml
+knowledge_resolver: true
+knowledge_cache:
+  enabled: true
+  path: knowledge-cache.yaml
+  compression:
+    provider: openai
+    model: large-context-model
+    temperature: 0.2
+    max_tokens: 16000
+```
+
+Build the artifact with:
+
+```bash
+darps compile-knowledge <pack> --config config.yaml --level 2
+```
+
+The compiler uses one model call for levels 1–3. This is an author-time call,
+so using a capable model with a large context window does not affect runtime
+latency or cost. Level 0 uses full original text and makes no call.
+
+The compiler validates complete ID coverage, uniqueness, non-empty output, and
+the per-route word budget before atomically replacing the artifact. If
+compilation fails, the previous file is retained. At runtime, a missing, stale,
+unreadable, incomplete, or malformed artifact makes DARPS automatically use
+the existing full-corpus resolver instead. This changes performance and prompt
+size only, never knowledge or reveal authority.

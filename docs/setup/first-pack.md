@@ -29,6 +29,16 @@ python -m darps validate docs/examples/minimal-pack
 python -m darps play docs/examples/minimal-pack
 ```
 
+For a large pack using semantic knowledge retrieval, you may also generate an
+inspectable common-knowledge routing catalogue:
+
+```bash
+python -m darps compile-knowledge docs/examples/minimal-pack \
+  --config config.yaml --level 2
+```
+
+This is optional and never affects pack validity.
+
 Use it to learn the core chain:
 
 1. `facts.yaml` declares what the player can learn.
