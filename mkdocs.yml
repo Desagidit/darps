@@ -72,6 +72,7 @@ nav:
   - Concepts:
       - Mental Model: concepts/index.md
       - Knowledge: concepts/knowledge.md
+      - Briefing: concepts/briefing.md
       - Gates: concepts/gates.md
       - State and Saves: concepts/state-saves.md
       - Glossary: concepts/glossary.md
