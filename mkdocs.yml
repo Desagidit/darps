@@ -38,6 +38,11 @@ theme:
         icon: material/brightness-4
         name: Switch to light mode
 
+plugins:
+  - search
+  - glightbox:
+      auto_themed: true
+
 markdown_extensions:
   - admonition
   - attr_list
