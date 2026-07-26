@@ -22,7 +22,7 @@ DARPS helps solve this problem through an easy-to-use API. You tell it who you'r
 Your game names the character being addressed—or the object being examined—and supplies the current world snapshot.
 DARPS assembles only the context that interaction may see, calls the model, validates its proposed events, and returns prose plus narrative deltas.
 
-![High Level Architecture](./images/darps_highlevel.png)
+![High Level Architecture](./images/darps_highlevel.svg)
 
 ## Choose your path
 

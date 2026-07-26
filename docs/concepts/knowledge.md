@@ -41,7 +41,7 @@ This makes one additional classifier call per talk turn. This will very slightly
 The knowledge resolver receives only the already filtered safe corpus and returns candidates to grab extra knowledge from.
 DARPS rejects invalid indexes and combines valid selections with deterministic matches. Leave it off when exact topical matching is sufficient or minimizing latency is more important.
 
-Knowledge is a large part of [the briefing](../concepts/briefing), the sum of information sent to the LLM to generate responses.
+Knowledge is a large part of [the briefing](../concepts/briefing.md), the sum of information sent to the LLM to generate responses.
 
 ## The 4 layers
 

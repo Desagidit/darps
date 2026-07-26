@@ -15,7 +15,7 @@ DARPS builds the brief privacy-first and never allows secreted information to en
 
 DARPS builds the brief after a /talk, /examine or /narrate call. Its exact build action depends on your configuration but the general flow is as below:
 
-![DARPS Briefing](../images/darps_knowledge.png)
+![DARPS Briefing](../images/darps_briefing.svg)
  
 ## Example Flow and Briefing
 
