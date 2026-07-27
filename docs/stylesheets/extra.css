@@ -92,7 +92,7 @@ body {
 }
 
 .md-typeset {
-  font-size: clamp(0.775rem, 0.735rem + 0.2vw, 0.84rem);
+  font-size: clamp(0.6rem, 0.65rem + 0.2vw, 0.7rem);
   line-height: 1.75;
   font-feature-settings: "kern", "liga";
 }
@@ -107,7 +107,7 @@ body {
 
 .md-typeset h1 {
   margin-bottom: 1.1rem;
-  font-size: clamp(1.85rem, 1.3rem + 2.4vw, 2.6rem);
+  font-size: clamp(1.6rem, 1.1rem + 2.4vw, 2.2rem);
   font-weight: 750;
   letter-spacing: -0.035em;
   line-height: 1.1;
@@ -117,7 +117,7 @@ body {
   margin-top: var(--darps-section-gap);
   padding-bottom: 0.35rem;
   border-bottom: 1px solid var(--darps-border);
-  font-size: clamp(1.25rem, 1.05rem + 0.85vw, 1.55rem);
+  font-size: clamp(1.1rem, 1.00rem + 0.85vw, 1.4rem);
   font-weight: 700;
   letter-spacing: -0.022em;
   line-height: 1.25;
@@ -125,7 +125,7 @@ body {
 
 .md-typeset h3 {
   margin-top: 1.9rem;
-  font-size: clamp(1.02rem, 0.94rem + 0.35vw, 1.18rem);
+  font-size: clamp(1rem, 0.94rem + 0.35vw, 1.2rem);
   font-weight: 680;
   letter-spacing: -0.014em;
 }
