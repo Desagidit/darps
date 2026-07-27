@@ -1,157 +1,149 @@
 /* DARPS visual layer -------------------------------------------------------
-   Keep these overrides focused on presentation. Material still owns layout,
-   responsiveness, keyboard behaviour, and colour-scheme switching. */
+   Presentation only. Material still owns layout, responsiveness, keyboard
+   behaviour, and colour-scheme switching; everything here is a refinement on
+   top of it. Sections: tokens, typography, chrome, navigation, content,
+   components, footer, home hero, responsive, motion/print. */
+
+/* ---------------------------------------------------------------- tokens -- */
 
 :root {
+  --darps-radius-xs: 0.3rem;
   --darps-radius-sm: 0.45rem;
-  --darps-radius-md: 0.8rem;
-  --darps-radius-lg: 1.15rem;
-  --darps-shadow-sm: 0 1px 2px rgb(18 14 30 / 5%),
-    0 8px 24px rgb(35 22 68 / 6%);
-  --darps-shadow-md: 0 2px 4px rgb(18 14 30 / 7%),
-    0 18px 48px rgb(35 22 68 / 10%);
+  --darps-radius-md: 0.75rem;
+  --darps-radius-lg: 1.1rem;
+
+  /* Fluid rhythm: one knob the whole page leans on. */
+  --darps-gutter: clamp(0.8rem, 0.45rem + 1.6vw, 1.6rem);
+  --darps-section-gap: clamp(1.8rem, 1.2rem + 2vw, 2.9rem);
+
+  --darps-shadow-xs: 0 1px 2px rgb(18 14 30 / 5%);
+  --darps-shadow-sm: 0 1px 2px rgb(18 14 30 / 4%), 0 6px 18px rgb(35 22 68 / 5%);
+  --darps-shadow-md: 0 2px 4px rgb(18 14 30 / 6%), 0 16px 40px rgb(35 22 68 / 9%);
+  --darps-shadow-lg: 0 4px 10px rgb(18 14 30 / 7%), 0 28px 72px rgb(35 22 68 / 14%);
+
   --md-text-font: Inter, ui-sans-serif, system-ui, -apple-system,
     BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --md-code-font: "Cascadia Code", "SFMono-Regular", Consolas, "Liberation Mono",
-    monospace;
+  --md-code-font: "JetBrains Mono", "Cascadia Code", "SFMono-Regular", Consolas,
+    "Liberation Mono", monospace;
 }
 
 [data-md-color-scheme="default"] {
-  --md-default-bg-color: #fbfafc;
-  --md-default-fg-color: #282431;
-  --md-default-fg-color--light: #625c6e;
-  --md-default-fg-color--lighter: #8b8496;
-  --md-default-fg-color--lightest: #e8e4ec;
-  --md-primary-fg-color: #3f2b68;
-  --md-primary-fg-color--light: #694ea0;
-  --md-primary-fg-color--dark: #2b1b4c;
+  --md-default-bg-color: #fcfcfd;
+  --md-default-fg-color: #1b1824;
+  --md-default-fg-color--light: #58526a;
+  --md-default-fg-color--lighter: #8b8499;
+  --md-default-fg-color--lightest: #e8e5ee;
+  --md-primary-fg-color: #3a2765;
+  --md-primary-fg-color--light: #6a4fa4;
+  --md-primary-fg-color--dark: #241738;
   --md-accent-fg-color: #8a5a00;
-  --md-typeset-a-color: #65449b;
+  --md-typeset-a-color: #5c3ea3;
+
   --darps-surface: #ffffff;
-  --darps-surface-soft: #f5f2f8;
-  --darps-border: rgb(63 43 104 / 12%);
-  --darps-header: rgb(43 27 76 / 94%);
-  --darps-code-bg: #f2eff6;
+  --darps-surface-soft: #f5f3f9;
+  --darps-surface-sunken: #f0edf5;
+  --darps-border: rgb(63 43 104 / 11%);
+  --darps-border-strong: rgb(63 43 104 / 20%);
+  --darps-header: rgb(30 20 52 / 88%);
+  --darps-code-bg: #f3f1f8;
+  --darps-glow: rgb(124 92 200 / 12%);
+  --darps-glow-warm: rgb(216 160 60 / 9%);
 }
 
 [data-md-color-scheme="slate"] {
-  --md-default-bg-color: #121016;
-  --md-default-fg-color: #eeeaf3;
-  --md-default-fg-color--light: #b8afc3;
-  --md-default-fg-color--lighter: #8e849b;
-  --md-default-fg-color--lightest: #302a38;
-  --md-primary-fg-color: #21172f;
-  --md-primary-fg-color--light: #8b6bc1;
-  --md-primary-fg-color--dark: #17101f;
-  --md-accent-fg-color: #f1b85b;
-  --md-typeset-a-color: #c6a9ef;
-  --darps-surface: #1a171f;
-  --darps-surface-soft: #211d27;
-  --darps-border: rgb(220 199 246 / 12%);
-  --darps-header: rgb(25 17 36 / 92%);
-  --darps-code-bg: #211d27;
-  --darps-shadow-sm: 0 1px 2px rgb(0 0 0 / 20%),
-    0 10px 28px rgb(0 0 0 / 18%);
-  --darps-shadow-md: 0 2px 4px rgb(0 0 0 / 24%),
-    0 20px 56px rgb(0 0 0 / 26%);
+  --md-hue: 264;
+  --md-default-bg-color: #100e15;
+  --md-default-fg-color: #eeeaf4;
+  --md-default-fg-color--light: #b6adc3;
+  --md-default-fg-color--lighter: #8b8299;
+  --md-default-fg-color--lightest: #2e2837;
+  --md-primary-fg-color: #1d1529;
+  --md-primary-fg-color--light: #9276cb;
+  --md-primary-fg-color--dark: #140e1d;
+  --md-accent-fg-color: #f2bc65;
+  --md-typeset-a-color: #c9adf2;
+
+  --darps-surface: #191621;
+  --darps-surface-soft: #201c2a;
+  --darps-surface-sunken: #16131d;
+  --darps-border: rgb(214 196 246 / 11%);
+  --darps-border-strong: rgb(214 196 246 / 22%);
+  --darps-header: rgb(19 13 30 / 86%);
+  --darps-code-bg: #1d1926;
+  --darps-glow: rgb(140 106 224 / 16%);
+  --darps-glow-warm: rgb(228 170 78 / 7%);
+
+  --darps-shadow-xs: 0 1px 2px rgb(0 0 0 / 24%);
+  --darps-shadow-sm: 0 1px 2px rgb(0 0 0 / 20%), 0 8px 22px rgb(0 0 0 / 20%);
+  --darps-shadow-md: 0 2px 4px rgb(0 0 0 / 24%), 0 18px 46px rgb(0 0 0 / 28%);
+  --darps-shadow-lg: 0 4px 10px rgb(0 0 0 / 28%), 0 30px 80px rgb(0 0 0 / 40%);
 }
 
-/* Header and navigation */
+/* ------------------------------------------------------------ typography -- */
 
-.md-header {
-  background: var(--darps-header);
-  box-shadow: 0 1px 0 rgb(255 255 255 / 8%);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-}
-
-.md-tabs {
-  background: var(--darps-header);
-  border-top: 1px solid rgb(255 255 255 / 6%);
-}
-
-.md-tabs__link {
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  opacity: 0.72;
-  transition: opacity 160ms ease, transform 160ms ease;
-}
-
-.md-tabs__link:is(:hover, :focus-visible),
-.md-tabs__item--active .md-tabs__link {
-  opacity: 1;
-  transform: translateY(-1px);
-}
-
-.md-search__form {
-  border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: 999px;
-  background-color: rgb(255 255 255 / 9%);
-}
-
-.md-search__form:hover {
-  background-color: rgb(255 255 255 / 14%);
-}
-
-.md-sidebar__scrollwrap {
-  scrollbar-width: thin;
-}
-
-.md-nav__link {
-  border-radius: var(--darps-radius-sm);
-  transition: color 140ms ease, background-color 140ms ease;
-}
-
-.md-nav__link:is(:hover, :focus-visible) {
-  background-color: color-mix(in srgb, var(--md-accent-fg-color) 8%, transparent);
-}
-
-.md-nav__link--active {
-  font-weight: 650;
-}
-
-/* Main reading surface */
-
-.md-grid {
-  max-width: 92rem;
-}
-
-.md-content__inner {
-  padding-top: 1.9rem;
-  padding-bottom: 3rem;
+body {
+  background-image:
+    radial-gradient(58rem 26rem at 78% -6rem, var(--darps-glow), transparent 70%),
+    radial-gradient(42rem 22rem at 8% -4rem, var(--darps-glow-warm), transparent 70%);
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 .md-typeset {
-  font-size: 0.82rem;
-  line-height: 1.72;
+  font-size: clamp(0.775rem, 0.735rem + 0.2vw, 0.84rem);
+  line-height: 1.75;
+  font-feature-settings: "kern", "liga";
+}
+
+.md-typeset h1,
+.md-typeset h2,
+.md-typeset h3,
+.md-typeset h4 {
+  color: var(--md-default-fg-color);
+  text-wrap: balance;
 }
 
 .md-typeset h1 {
-  margin-bottom: 1.2rem;
-  color: var(--md-default-fg-color);
-  font-size: clamp(2rem, 4vw, 2.65rem);
-  font-weight: 760;
+  margin-bottom: 1.1rem;
+  font-size: clamp(1.85rem, 1.3rem + 2.4vw, 2.6rem);
+  font-weight: 750;
   letter-spacing: -0.035em;
-  line-height: 1.08;
+  line-height: 1.1;
 }
 
 .md-typeset h2 {
-  margin-top: 2.5rem;
-  padding-bottom: 0.4rem;
+  margin-top: var(--darps-section-gap);
+  padding-bottom: 0.35rem;
   border-bottom: 1px solid var(--darps-border);
-  color: var(--md-default-fg-color);
-  font-weight: 710;
-  letter-spacing: -0.02em;
+  font-size: clamp(1.25rem, 1.05rem + 0.85vw, 1.55rem);
+  font-weight: 700;
+  letter-spacing: -0.022em;
+  line-height: 1.25;
 }
 
 .md-typeset h3 {
-  font-weight: 690;
-  letter-spacing: -0.012em;
+  margin-top: 1.9rem;
+  font-size: clamp(1.02rem, 0.94rem + 0.35vw, 1.18rem);
+  font-weight: 680;
+  letter-spacing: -0.014em;
+}
+
+.md-typeset h4 {
+  font-weight: 660;
+  letter-spacing: -0.008em;
+}
+
+.md-typeset p,
+.md-typeset li {
+  text-wrap: pretty;
 }
 
 .md-typeset a {
-  text-underline-offset: 0.16em;
+  text-underline-offset: 0.17em;
   text-decoration-thickness: 0.06em;
+  transition: color 140ms ease;
 }
 
 .md-typeset a:hover {
@@ -162,10 +154,224 @@
   border-color: var(--darps-border);
 }
 
-/* Cards, callouts, and tables */
+.md-typeset ul li::marker {
+  color: var(--md-default-fg-color--lighter);
+}
+
+/* Anchors fade in rather than popping. */
+.md-typeset .headerlink {
+  opacity: 0;
+  transition: opacity 140ms ease, color 140ms ease;
+}
+
+.md-typeset :is(h1, h2, h3, h4, h5, h6):is(:hover, :focus-within) .headerlink,
+.md-typeset .headerlink:focus-visible {
+  opacity: 1;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--md-typeset-a-color) 24%, transparent);
+}
+
+:is(a, button, .md-nav__link, .md-tabs__link):focus-visible {
+  outline: 2px solid var(--md-accent-fg-color);
+  outline-offset: 2px;
+  border-radius: var(--darps-radius-xs);
+}
+
+/* Thin scrollbars inside panes only — the document scrollbar stays default so
+   it remains an obvious affordance. */
+.md-sidebar__scrollwrap,
+.md-typeset__scrollwrap,
+.md-typeset pre,
+.md-typeset .mermaid,
+.md-search__scrollwrap {
+  scrollbar-width: thin;
+  scrollbar-color: var(--darps-border-strong) transparent;
+}
+
+/* ---------------------------------------------------------------- chrome -- */
+
+.md-header {
+  background: var(--darps-header);
+  box-shadow: none;
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+}
+
+.md-header--shadow {
+  box-shadow: 0 6px 24px rgb(12 8 24 / 22%);
+}
+
+.md-header__title {
+  font-weight: 640;
+  letter-spacing: -0.012em;
+}
+
+/* The tab strip sits below the header, not inside it: it needs the same fill
+   so the two read as one band, plus the hairline that closes it off. */
+.md-tabs {
+  background: var(--darps-header);
+  border-bottom: 1px solid rgb(255 255 255 / 8%);
+  box-shadow: none;
+}
+
+.md-tabs__link {
+  position: relative;
+  margin-top: 0.5rem;
+  padding-bottom: 0.35rem;
+  font-weight: 600;
+  font-size: 0.68rem;
+  letter-spacing: 0.005em;
+  opacity: 0.68;
+  transition: opacity 160ms ease;
+}
+
+.md-tabs__link::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: currentcolor;
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 180ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.md-tabs__link:is(:hover, :focus-visible) {
+  opacity: 1;
+}
+
+.md-tabs__item--active .md-tabs__link {
+  opacity: 1;
+}
+
+.md-tabs__item--active .md-tabs__link::after,
+.md-tabs__link:hover::after {
+  transform: scaleX(1);
+}
+
+/* Search. The pill treatment is desktop-only: below 60em the field becomes a
+   full-screen overlay that Material styles on its own terms. */
+@media screen and (min-width: 60em) {
+  .md-search__form {
+    border: 1px solid rgb(255 255 255 / 12%);
+    border-radius: 999px;
+    background-color: rgb(255 255 255 / 8%);
+    transition: background-color 160ms ease, border-color 160ms ease;
+  }
+
+  .md-search__form:is(:hover, :focus-within) {
+    background-color: rgb(255 255 255 / 15%);
+    border-color: rgb(255 255 255 / 24%);
+  }
+}
+
+.md-search__input::placeholder {
+  opacity: 0.7;
+}
+
+.md-search__output {
+  border-radius: 0 0 var(--darps-radius-md) var(--darps-radius-md);
+  box-shadow: var(--darps-shadow-lg);
+}
+
+.md-search-result__meta {
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 0.6rem;
+  font-weight: 620;
+}
+
+.md-search-result__article,
+.md-search-result__more summary {
+  border-radius: var(--darps-radius-sm);
+}
+
+/* ------------------------------------------------------------ navigation -- */
+
+/* Wide enough to feel airy, narrow enough that lines stay readable. */
+.md-grid {
+  max-width: 78rem;
+}
+
+.md-sidebar__scrollwrap {
+  scrollbar-width: thin;
+}
+
+.md-nav {
+  font-size: 0.68rem;
+}
+
+.md-nav__link {
+  border-radius: var(--darps-radius-sm);
+  transition: color 140ms ease, background-color 140ms ease;
+}
+
+.md-nav__link:is(:hover, :focus-visible) {
+  color: var(--md-typeset-a-color);
+}
+
+.md-nav__link--active {
+  font-weight: 640;
+}
+
+/* Material draws the table-of-contents rail in the primary colour, which is
+   far too loud against a quiet sidebar. */
+.md-nav--secondary {
+  border-inline-start-color: var(--darps-border);
+}
+
+/* ----------------------------------------------------- reading container -- */
+
+/* Material pins these margins when a table of contents is present, so the
+   selector has to be matched to keep the column centred. */
+.md-content > .md-content__inner,
+.md-sidebar--secondary:not([hidden]) ~ .md-content > .md-content__inner {
+  max-width: 46rem;
+  margin-inline: auto;
+  padding-top: clamp(1.2rem, 0.7rem + 1.6vw, 2.1rem);
+  padding-bottom: 3rem;
+}
+
+.md-content__inner::before {
+  height: 0;
+}
+
+.md-content__button {
+  color: var(--md-default-fg-color--lighter);
+}
+
+/* Back-to-top pill. */
+.md-top {
+  border-radius: 999px;
+  background: var(--darps-surface);
+  border: 1px solid var(--darps-border);
+  box-shadow: var(--darps-shadow-md);
+  backdrop-filter: blur(8px);
+}
+
+.md-top:hover {
+  background: var(--darps-surface);
+  border-color: var(--darps-border-strong);
+  transform: translate(-50%, -2px);
+}
+
+/* ------------------------------------------------------------ components -- */
+
+/* Cards. The grid lives on .grid itself; the list inside is display:contents. */
+.md-typeset .grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  gap: 0.85rem;
+  margin-block: 1.4em;
+}
 
 .md-typeset .grid.cards > ul > li,
 .md-typeset .grid.cards > ol > li {
+  margin: 0;
+  padding: 1.05rem 1.1rem;
   border: 1px solid var(--darps-border);
   border-radius: var(--darps-radius-lg);
   background: var(--darps-surface);
@@ -178,32 +384,82 @@
 .md-typeset .grid.cards > ol > li:hover {
   border-color: color-mix(
     in srgb,
-    var(--md-accent-fg-color) 34%,
+    var(--md-typeset-a-color) 38%,
     var(--darps-border)
   );
   box-shadow: var(--darps-shadow-md);
   transform: translateY(-3px);
 }
 
-.md-typeset .admonition,
-.md-typeset details {
-  overflow: hidden;
+.md-typeset .grid.cards > ul > li > hr,
+.md-typeset .grid.cards > ol > li > hr {
+  margin: 0.6rem 0;
+  border-color: var(--darps-border);
+}
+
+/* Buttons */
+.md-typeset .md-button {
+  border-radius: 999px;
   border-width: 1px;
-  border-radius: var(--darps-radius-md);
+  padding: 0.5em 1.15em;
+  font-weight: 620;
+  letter-spacing: 0.005em;
+  transition: background-color 160ms ease, border-color 160ms ease,
+    color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.md-typeset .md-button:is(:hover, :focus-visible) {
+  transform: translateY(-1px);
   box-shadow: var(--darps-shadow-sm);
 }
 
+.md-typeset .md-button--primary {
+  background: var(--md-typeset-a-color);
+  border-color: var(--md-typeset-a-color);
+  color: var(--md-default-bg-color);
+}
+
+.md-typeset .md-button--primary:is(:hover, :focus-visible) {
+  background: var(--md-accent-fg-color);
+  border-color: var(--md-accent-fg-color);
+  color: var(--md-default-bg-color);
+}
+
+/* Admonitions and collapsibles: flat, tinted, one accent edge. */
+.md-typeset .admonition,
+.md-typeset details {
+  overflow: hidden;
+  border: 1px solid var(--darps-border);
+  border-inline-start-width: 3px;
+  border-radius: var(--darps-radius-md);
+  background: var(--darps-surface);
+  box-shadow: var(--darps-shadow-xs);
+  font-size: 0.72rem;
+}
+
+.md-typeset :is(.admonition-title, summary) {
+  font-weight: 660;
+  letter-spacing: -0.008em;
+}
+
+.md-typeset :is(.admonition-title, summary)::before {
+  border-radius: 0.15rem;
+}
+
+/* Tables */
 .md-typeset table:not([class]) {
   overflow: hidden;
   border: 1px solid var(--darps-border);
   border-radius: var(--darps-radius-md);
   background: var(--darps-surface);
-  box-shadow: var(--darps-shadow-sm);
+  box-shadow: var(--darps-shadow-xs);
+  font-size: 0.68rem;
 }
 
 .md-typeset table:not([class]) th {
   background: var(--darps-surface-soft);
-  font-weight: 700;
+  font-weight: 680;
+  letter-spacing: 0.005em;
 }
 
 .md-typeset table:not([class]) td,
@@ -211,32 +467,74 @@
   border-color: var(--darps-border);
 }
 
-/* Code */
+.md-typeset table:not([class]) tr:hover {
+  background: color-mix(in srgb, var(--darps-surface-soft) 60%, transparent);
+}
 
+/* Give wide tables a scroll surface that matches the rest of the page. */
+.md-typeset__scrollwrap {
+  margin-inline: 0;
+}
+
+.md-typeset__table {
+  padding: 0;
+}
+
+/* Code */
 .md-typeset code {
-  border-radius: 0.3rem;
+  border-radius: var(--darps-radius-xs);
   background-color: var(--darps-code-bg);
+  font-size: 0.84em;
 }
 
 .md-typeset pre > code {
   border-radius: var(--darps-radius-md);
+  padding: 0.85rem 0.95rem;
 }
 
-.md-typeset .highlight {
+.md-typeset .highlight,
+.md-typeset .highlighttable {
   border: 1px solid var(--darps-border);
   border-radius: var(--darps-radius-md);
-  box-shadow: var(--darps-shadow-sm);
+  background: var(--darps-code-bg);
+  box-shadow: var(--darps-shadow-xs);
 }
 
-.md-typeset .highlight pre {
+.md-typeset .highlight pre,
+.md-typeset .highlighttable pre {
   margin: 0;
 }
 
-.md-clipboard {
-  border-radius: 0.35rem;
+.md-typeset .highlight code {
+  background: transparent;
 }
 
-/* Images and diagrams */
+.md-clipboard {
+  border-radius: var(--darps-radius-xs);
+  color: var(--md-default-fg-color--lighter);
+  transition: color 140ms ease, background-color 140ms ease;
+}
+
+.md-clipboard:hover {
+  background: color-mix(in srgb, var(--md-typeset-a-color) 12%, transparent);
+  color: var(--md-typeset-a-color);
+}
+
+/* Content tabs */
+.md-typeset .tabbed-set > input:checked + label {
+  font-weight: 660;
+}
+
+.md-typeset .tabbed-labels {
+  scrollbar-width: none;
+}
+
+/* Images, diagrams, lightboxes */
+.md-typeset img,
+.md-typeset svg {
+  max-width: 100%;
+  height: auto;
+}
 
 .md-typeset a.glightbox {
   display: block;
@@ -248,7 +546,9 @@
 
 .md-typeset a.glightbox img {
   display: block;
+  width: 100%;
   margin: 0 auto;
+  padding: 0.6rem;
   border: 1px solid var(--darps-border);
   border-radius: var(--darps-radius-lg);
   background: var(--darps-surface);
@@ -260,24 +560,236 @@
 .md-typeset a.glightbox:hover img {
   border-color: color-mix(
     in srgb,
-    var(--md-accent-fg-color) 35%,
+    var(--md-typeset-a-color) 38%,
     var(--darps-border)
   );
+  box-shadow: var(--darps-shadow-lg);
   transform: translateY(-2px);
 }
 
-/* Footer */
+.md-typeset .mermaid {
+  overflow-x: auto;
+  margin-block: 1.5rem;
+  padding: 1rem 0.6rem;
+  border: 1px solid var(--darps-border);
+  border-radius: var(--darps-radius-lg);
+  background: var(--darps-surface);
+  box-shadow: var(--darps-shadow-xs);
+}
+
+/* ---------------------------------------------------------------- footer -- */
 
 .md-footer {
   border-top: 1px solid var(--darps-border);
   background: var(--darps-surface-soft);
 }
 
+.md-footer__link {
+  border-radius: var(--darps-radius-md);
+  opacity: 1;
+  transition: background-color 160ms ease, transform 160ms ease;
+}
+
+.md-footer__link:is(:hover, :focus-visible) {
+  background: color-mix(in srgb, var(--md-typeset-a-color) 8%, transparent);
+}
+
+.md-footer__direction {
+  color: var(--md-default-fg-color--lighter);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 0.55rem;
+}
+
+.md-footer__title {
+  color: var(--md-default-fg-color);
+  font-weight: 620;
+}
+
 .md-footer-meta {
   background: var(--md-primary-fg-color--dark);
 }
 
-/* Respect reduced-motion preferences. */
+/* ------------------------------------------------------------- home hero -- */
+
+.darps-hero {
+  margin: 0 0 var(--darps-section-gap);
+  padding: clamp(1.6rem, 1rem + 3vw, 2.9rem) clamp(1.1rem, 0.7rem + 2vw, 2.4rem);
+  border: 1px solid var(--darps-border);
+  border-radius: var(--darps-radius-lg);
+  background:
+    radial-gradient(38rem 18rem at 88% -4rem, var(--darps-glow), transparent 70%),
+    var(--darps-surface);
+  box-shadow: var(--darps-shadow-sm);
+}
+
+.darps-hero__eyebrow {
+  margin: 0 0 0.55rem;
+  color: var(--md-default-fg-color--lighter);
+  font-size: 0.6rem;
+  font-weight: 680;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.md-typeset .darps-hero h1 {
+  margin-bottom: 0.7rem;
+}
+
+.md-typeset .darps-hero__lede {
+  max-width: 34rem;
+  margin-bottom: 1.3rem;
+  color: var(--md-default-fg-color--light);
+  font-size: 1.02em;
+  line-height: 1.6;
+}
+
+.darps-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.md-typeset .darps-hero__actions .md-button {
+  margin: 0;
+}
+
+/* ------------------------------------------------------------ responsive -- */
+
+/* Phones: tighter gutters, smaller display type, no hover lift. */
+@media screen and (max-width: 44.984375em) {
+  /* Fixed backgrounds are a repaint tax on mobile browsers, and the glow is
+     anchored to the top of the page anyway. */
+  body {
+    background-attachment: scroll;
+  }
+
+  .md-typeset {
+    line-height: 1.7;
+  }
+
+  .md-content__inner {
+    padding-inline: var(--darps-gutter);
+  }
+
+  .md-typeset h2 {
+    margin-top: 2rem;
+  }
+
+  .md-typeset pre > code {
+    padding: 0.7rem 0.75rem;
+  }
+
+  .md-typeset .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .md-typeset .grid.cards > ul > li:hover,
+  .md-typeset .grid.cards > ol > li:hover,
+  .md-typeset a.glightbox:hover img {
+    transform: none;
+  }
+
+  .darps-hero {
+    border-inline: 0;
+    border-radius: var(--darps-radius-md);
+  }
+
+  .darps-hero__actions .md-button {
+    flex: 1 1 100%;
+    text-align: center;
+  }
+}
+
+/* Drawer navigation (phone and tablet): calmer header, roomier rows. */
+@media screen and (max-width: 76.1875em) {
+  /* No tab strip at this width, so the header closes itself off. */
+  .md-header {
+    border-bottom: 1px solid rgb(255 255 255 / 8%);
+  }
+
+  .md-nav--primary .md-nav__title {
+    background: var(--darps-surface-soft);
+    color: var(--md-default-fg-color);
+    box-shadow: none;
+    border-bottom: 1px solid var(--darps-border);
+  }
+
+  .md-nav--primary .md-nav__list .md-nav__link {
+    border-radius: 0;
+  }
+
+  .md-nav--primary .md-nav__item {
+    border-top-color: var(--darps-border);
+  }
+}
+
+/* Table of contents: quiet until it is the current section. */
+@media screen and (min-width: 60em) {
+  .md-sidebar--secondary .md-nav__link--active {
+    color: var(--md-typeset-a-color);
+  }
+}
+
+/* Desktop sidebar: section labels read as headings, links as a soft pill. */
+@media screen and (min-width: 76.25em) {
+  .md-sidebar--primary .md-nav__title {
+    color: var(--md-default-fg-color--lighter);
+    font-size: 0.6rem;
+    font-weight: 680;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+
+  .md-sidebar--primary .md-nav__item--section > .md-nav__link {
+    color: var(--md-default-fg-color--lighter);
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* Leaf links get a pill. The nav list carries .6rem of inline padding, so
+     the negative margin bleeds into it without clipping and leaves the text
+     itself aligned. */
+  .md-sidebar--primary .md-nav__link:not(.md-nav__container) {
+    padding-block: 0.18rem;
+    padding-inline: 0.4rem;
+    margin-inline: -0.4rem;
+  }
+
+  .md-sidebar--primary .md-nav__link:not(.md-nav__container):hover {
+    background: color-mix(in srgb, var(--md-typeset-a-color) 8%, transparent);
+  }
+
+  .md-sidebar--primary .md-nav__link--active:not(.md-nav__container) {
+    background: color-mix(in srgb, var(--md-typeset-a-color) 12%, transparent);
+    color: var(--md-typeset-a-color);
+  }
+
+  /* A section container wraps a link plus a toggle label; it is a heading,
+     not a destination, so it keeps neither pill nor indent. */
+  .md-sidebar--primary .md-nav__item--section > .md-nav__container > .md-nav__link {
+    background: none;
+    color: inherit;
+    padding-inline: 0;
+    margin-inline: 0;
+  }
+}
+
+/* Very wide screens: stop the layout from sprawling. */
+@media screen and (min-width: 100em) {
+  .md-grid {
+    max-width: 84rem;
+  }
+
+  .md-content > .md-content__inner,
+  .md-sidebar--secondary:not([hidden]) ~ .md-content > .md-content__inner {
+    max-width: 48rem;
+  }
+}
+
+/* ------------------------------------------------------- motion & print -- */
 
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -285,15 +797,16 @@
   *::after {
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
   }
 }
 
-@media screen and (max-width: 44.984375em) {
-  .md-content__inner {
-    padding-top: 1.25rem;
+@media print {
+  body {
+    background-image: none;
   }
 
-  .md-typeset h1 {
-    font-size: 2rem;
+  .md-typeset :is(.admonition, details, .highlight, table:not([class])) {
+    box-shadow: none;
   }
 }

@@ -14,15 +14,32 @@ exclude_docs: |
 theme:
   name: material
   features:
+    - navigation.instant
+    - navigation.instant.progress
     - navigation.tabs
     - navigation.sections
     - navigation.indexes
+    - navigation.tracking
     - navigation.top
+    - navigation.footer
+    - toc.follow
     - search.suggest
     - search.highlight
+    - search.share
     - content.code.copy
     - content.tabs.link
+    - content.tooltips
+  # Fonts come from extra_css instead: Material's loader only fetches static
+  # 300/400/700 faces, and the stylesheet uses the intermediate weights that
+  # only the variable faces provide.
+  font: false
+  icon:
+    repo: fontawesome/brands/github
   palette:
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
     - media: "(prefers-color-scheme: light)"
       scheme: default
       primary: deep purple
@@ -36,7 +53,13 @@ theme:
       accent: amber
       toggle:
         icon: material/brightness-4
-        name: Switch to light mode
+        name: Switch to system preference
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/Desagidit/darps
+      name: DARPS on GitHub
 
 plugins:
   - search
@@ -44,6 +67,7 @@ plugins:
       auto_themed: true
 
 extra_css:
+  - https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..800;1,14..32,300..800&family=JetBrains+Mono:ital,wght@0,400..700;1,400..700&display=swap
   - stylesheets/extra.css
 
 markdown_extensions:

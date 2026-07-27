@@ -1,7 +1,18 @@
+<div class="darps-hero" markdown>
+
+<p class="darps-hero__eyebrow">Dynamic Agentic Roleplaying System</p>
+
 # DARPS
 
-What if your game didn't have a list of conversation options?
-What if your players could just talk freely to NPCs?
+<p class="darps-hero__lede">What if your game didn't have a list of conversation options?
+What if your players could just talk freely to NPCs?</p>
+
+<div class="darps-hero__actions" markdown>
+[Get started](setup/index.md){ .md-button .md-button--primary }
+[How it works](#how-it-works){ .md-button }
+</div>
+
+</div>
 
 DARPS helps solve this problem through an easy-to-use API. You tell it who you're talking to and what you're saying and DARPS will:
 
@@ -17,7 +28,7 @@ DARPS helps solve this problem through an easy-to-use API. You tell it who you'r
 	Build 'packs' with great settings, intruiging characters and interesting locations. Then use DARPS to let players interact with it.
 	DARPS uses strict isolation of knowledge so you can trust it to not leak secrets or go on a narrative tangent.
 
-# How it works
+## How it works
 
 Your game names the character being addressed—or the object being examined—and supplies the current world snapshot.
 DARPS assembles only the context that interaction may see, calls the model, validates its proposed events, and returns prose plus narrative deltas.
