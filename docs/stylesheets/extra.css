@@ -1,0 +1,299 @@
+/* DARPS visual layer -------------------------------------------------------
+   Keep these overrides focused on presentation. Material still owns layout,
+   responsiveness, keyboard behaviour, and colour-scheme switching. */
+
+:root {
+  --darps-radius-sm: 0.45rem;
+  --darps-radius-md: 0.8rem;
+  --darps-radius-lg: 1.15rem;
+  --darps-shadow-sm: 0 1px 2px rgb(18 14 30 / 5%),
+    0 8px 24px rgb(35 22 68 / 6%);
+  --darps-shadow-md: 0 2px 4px rgb(18 14 30 / 7%),
+    0 18px 48px rgb(35 22 68 / 10%);
+  --md-text-font: Inter, ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --md-code-font: "Cascadia Code", "SFMono-Regular", Consolas, "Liberation Mono",
+    monospace;
+}
+
+[data-md-color-scheme="default"] {
+  --md-default-bg-color: #fbfafc;
+  --md-default-fg-color: #282431;
+  --md-default-fg-color--light: #625c6e;
+  --md-default-fg-color--lighter: #8b8496;
+  --md-default-fg-color--lightest: #e8e4ec;
+  --md-primary-fg-color: #3f2b68;
+  --md-primary-fg-color--light: #694ea0;
+  --md-primary-fg-color--dark: #2b1b4c;
+  --md-accent-fg-color: #8a5a00;
+  --md-typeset-a-color: #65449b;
+  --darps-surface: #ffffff;
+  --darps-surface-soft: #f5f2f8;
+  --darps-border: rgb(63 43 104 / 12%);
+  --darps-header: rgb(43 27 76 / 94%);
+  --darps-code-bg: #f2eff6;
+}
+
+[data-md-color-scheme="slate"] {
+  --md-default-bg-color: #121016;
+  --md-default-fg-color: #eeeaf3;
+  --md-default-fg-color--light: #b8afc3;
+  --md-default-fg-color--lighter: #8e849b;
+  --md-default-fg-color--lightest: #302a38;
+  --md-primary-fg-color: #21172f;
+  --md-primary-fg-color--light: #8b6bc1;
+  --md-primary-fg-color--dark: #17101f;
+  --md-accent-fg-color: #f1b85b;
+  --md-typeset-a-color: #c6a9ef;
+  --darps-surface: #1a171f;
+  --darps-surface-soft: #211d27;
+  --darps-border: rgb(220 199 246 / 12%);
+  --darps-header: rgb(25 17 36 / 92%);
+  --darps-code-bg: #211d27;
+  --darps-shadow-sm: 0 1px 2px rgb(0 0 0 / 20%),
+    0 10px 28px rgb(0 0 0 / 18%);
+  --darps-shadow-md: 0 2px 4px rgb(0 0 0 / 24%),
+    0 20px 56px rgb(0 0 0 / 26%);
+}
+
+/* Header and navigation */
+
+.md-header {
+  background: var(--darps-header);
+  box-shadow: 0 1px 0 rgb(255 255 255 / 8%);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.md-tabs {
+  background: var(--darps-header);
+  border-top: 1px solid rgb(255 255 255 / 6%);
+}
+
+.md-tabs__link {
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  opacity: 0.72;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.md-tabs__link:is(:hover, :focus-visible),
+.md-tabs__item--active .md-tabs__link {
+  opacity: 1;
+  transform: translateY(-1px);
+}
+
+.md-search__form {
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 999px;
+  background-color: rgb(255 255 255 / 9%);
+}
+
+.md-search__form:hover {
+  background-color: rgb(255 255 255 / 14%);
+}
+
+.md-sidebar__scrollwrap {
+  scrollbar-width: thin;
+}
+
+.md-nav__link {
+  border-radius: var(--darps-radius-sm);
+  transition: color 140ms ease, background-color 140ms ease;
+}
+
+.md-nav__link:is(:hover, :focus-visible) {
+  background-color: color-mix(in srgb, var(--md-accent-fg-color) 8%, transparent);
+}
+
+.md-nav__link--active {
+  font-weight: 650;
+}
+
+/* Main reading surface */
+
+.md-grid {
+  max-width: 92rem;
+}
+
+.md-content__inner {
+  padding-top: 1.9rem;
+  padding-bottom: 3rem;
+}
+
+.md-typeset {
+  font-size: 0.82rem;
+  line-height: 1.72;
+}
+
+.md-typeset h1 {
+  margin-bottom: 1.2rem;
+  color: var(--md-default-fg-color);
+  font-size: clamp(2rem, 4vw, 2.65rem);
+  font-weight: 760;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+}
+
+.md-typeset h2 {
+  margin-top: 2.5rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--darps-border);
+  color: var(--md-default-fg-color);
+  font-weight: 710;
+  letter-spacing: -0.02em;
+}
+
+.md-typeset h3 {
+  font-weight: 690;
+  letter-spacing: -0.012em;
+}
+
+.md-typeset a {
+  text-underline-offset: 0.16em;
+  text-decoration-thickness: 0.06em;
+}
+
+.md-typeset a:hover {
+  text-decoration: underline;
+}
+
+.md-typeset hr {
+  border-color: var(--darps-border);
+}
+
+/* Cards, callouts, and tables */
+
+.md-typeset .grid.cards > ul > li,
+.md-typeset .grid.cards > ol > li {
+  border: 1px solid var(--darps-border);
+  border-radius: var(--darps-radius-lg);
+  background: var(--darps-surface);
+  box-shadow: var(--darps-shadow-sm);
+  transition: border-color 180ms ease, box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.md-typeset .grid.cards > ul > li:hover,
+.md-typeset .grid.cards > ol > li:hover {
+  border-color: color-mix(
+    in srgb,
+    var(--md-accent-fg-color) 34%,
+    var(--darps-border)
+  );
+  box-shadow: var(--darps-shadow-md);
+  transform: translateY(-3px);
+}
+
+.md-typeset .admonition,
+.md-typeset details {
+  overflow: hidden;
+  border-width: 1px;
+  border-radius: var(--darps-radius-md);
+  box-shadow: var(--darps-shadow-sm);
+}
+
+.md-typeset table:not([class]) {
+  overflow: hidden;
+  border: 1px solid var(--darps-border);
+  border-radius: var(--darps-radius-md);
+  background: var(--darps-surface);
+  box-shadow: var(--darps-shadow-sm);
+}
+
+.md-typeset table:not([class]) th {
+  background: var(--darps-surface-soft);
+  font-weight: 700;
+}
+
+.md-typeset table:not([class]) td,
+.md-typeset table:not([class]) th {
+  border-color: var(--darps-border);
+}
+
+/* Code */
+
+.md-typeset code {
+  border-radius: 0.3rem;
+  background-color: var(--darps-code-bg);
+}
+
+.md-typeset pre > code {
+  border-radius: var(--darps-radius-md);
+}
+
+.md-typeset .highlight {
+  border: 1px solid var(--darps-border);
+  border-radius: var(--darps-radius-md);
+  box-shadow: var(--darps-shadow-sm);
+}
+
+.md-typeset .highlight pre {
+  margin: 0;
+}
+
+.md-clipboard {
+  border-radius: 0.35rem;
+}
+
+/* Images and diagrams */
+
+.md-typeset a.glightbox {
+  display: block;
+  margin-block: 1.5rem;
+  border-radius: var(--darps-radius-lg);
+  cursor: zoom-in;
+  text-decoration: none;
+}
+
+.md-typeset a.glightbox img {
+  display: block;
+  margin: 0 auto;
+  border: 1px solid var(--darps-border);
+  border-radius: var(--darps-radius-lg);
+  background: var(--darps-surface);
+  box-shadow: var(--darps-shadow-md);
+  transition: border-color 180ms ease, box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.md-typeset a.glightbox:hover img {
+  border-color: color-mix(
+    in srgb,
+    var(--md-accent-fg-color) 35%,
+    var(--darps-border)
+  );
+  transform: translateY(-2px);
+}
+
+/* Footer */
+
+.md-footer {
+  border-top: 1px solid var(--darps-border);
+  background: var(--darps-surface-soft);
+}
+
+.md-footer-meta {
+  background: var(--md-primary-fg-color--dark);
+}
+
+/* Respect reduced-motion preferences. */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media screen and (max-width: 44.984375em) {
+  .md-content__inner {
+    padding-top: 1.25rem;
+  }
+
+  .md-typeset h1 {
+    font-size: 2rem;
+  }
+}
