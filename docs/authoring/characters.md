@@ -4,9 +4,10 @@ Character files define the NPC characters in your game. In this article we'll go
 
 Character files combine identity, performance guidance, private knowledge, shared reputation, and per-character attitude behavior.
 
-```yaml
---8<-- "docs/examples/minimal-pack/characters/mira.yaml"
-```
+??? Expand character yaml example
+	```yaml
+	--8<-- "docs/examples/minimal-pack/characters/mira.yaml"
+	```
 
 | Field | Purpose |
 |---|---|
@@ -29,13 +30,13 @@ Character files combine identity, performance guidance, private knowledge, share
 
 Every character has some basic information.
 
-`id`: A unique DARPS ID for this character that will be used internally. You should ensure your game understands what each character's ID is so you can call DARPS to speak to individuals.
-`name`: The character's canonical name that DARPS will preferentially use
-`summary`: A simple summary for the LLM to understand the character. Keep it short.
-`aliases`: Alternate names used by the resolver to help map mentions. You might want to include forenames, nicknames, familial relationships, job titles and so on.
-`background`: A longer form description of the character. This has some redundancy with `summary` but it can help the LLM to have both.
-`knowledge_scopes`: Which scopes this character belongs to. It knows everything within this scope. Consider groups of knowledge. Who are family? Who belong to the household? Who are strangers? Who are expects in a particular subject? Who are accomplices?
-`hints`: If `true` DARPS can allow this character to deliver pacing hints. For more information, see [Concept: Hints](../concepts/hints.md).
+* `id`: A unique DARPS ID for this character that will be used internally. You should ensure your game understands what each character's ID is so you can call DARPS to speak to individuals.
+* `name`: The character's canonical name that DARPS will preferentially use
+* `summary`: A simple summary for the LLM to understand the character. Keep it short.
+* `aliases`: Alternate names used by the resolver to help map mentions. You might want to include forenames, nicknames, familial relationships, job titles and so on.
+* `background`: A longer form description of the character. This has some redundancy with `summary` but it can help the LLM to have both.
+* `knowledge_scopes`: Which scopes this character belongs to. It knows everything within this scope. Consider groups of knowledge. Who are family? Who belong to the household? Who are strangers? Who are expects in a particular subject? Who are accomplices?
+* `hints`: If `true` DARPS can allow this character to deliver pacing hints. For more information, see [Concept: Hints](../concepts/hints.md).
 
 
 ## Knowledge
