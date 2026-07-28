@@ -25,14 +25,16 @@ tracks:
   disposition:
     min: -3
     max: 3
-    default: 0
+    start: 0
+    speed: 0.5                 # inherited unless a character overrides it
     guidance: >
       Kindness and respect increase it; hostility and contempt decrease it.
       Routine questions and repeated pleasantries do not change it.
   fear:
     min: 0
     max: 3
-    default: 0
+    start: 0
+    speed: 0.5
     guidance: >
       Credible threats increase it; bluster does not; reassurance reduces it.
 default_track: disposition
@@ -155,12 +157,16 @@ knowledge:
 
 track_settings:
   disposition:
+    min: -3
+    max: 3
     start: -0.5
     speed: 0.5
     guidance: >
       Warmth opens her; rudeness meets a closed, polite surface. She cannot be
       intimidated — only trusted.
   fear:
+    min: 0
+    max: 3
     start: 0
     speed: 0.5
     guidance: "Threats to the house affect her more than threats against herself."
@@ -198,11 +204,10 @@ knowledge:
 track_settings:
   disposition:
     start: 0.5
-    speed: 0.75
+    speed: 0.75       # character override of the pack-wide 0.5
     guidance: "Friendly treatment raises it; bullying makes him clam up from hurt."
   fear:
     start: 0
-    speed: 0.75
 
 track_prose:
   disposition:

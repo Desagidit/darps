@@ -115,19 +115,17 @@ def _public_entity(entity: dict) -> dict:
 
 def _pack_metadata(pack) -> dict:
     manifest = pack.manifest()
-    numeric = lambda spec: {key: spec[key]
-                            for key in ("min", "max", "default", "speed")
-                            if key in spec}
+    numeric = lambda spec, keys: {key: spec[key] for key in keys if key in spec}
     return {
         "pack_id": state_mod.pack_id(manifest),
         "name": manifest["name"],
         "characters": [_public_entity(c) for c in pack.characters().values()],
         "locations": [_public_entity(pack.location(lid)) for lid in pack.location_ids()],
         "items": [_public_entity(item) for item in pack.items().values()],
-        "tracks": {tid: numeric(spec)
+        "tracks": {tid: numeric(spec, ("min", "max", "start", "speed"))
                    for tid, spec in (manifest.get("tracks", {}) or {}).items()},
         "default_track": manifest.get("default_track"),
-        "persona": {pid: numeric(spec)
+        "persona": {pid: numeric(spec, ("min", "max", "default", "speed"))
                     for pid, spec in (manifest.get("persona", {}) or {}).items()},
         "capabilities": ["talk", "talk_stream", "examine", "examine_stream",
                          "narrate", "narrate_stream", "tracks", "persona",

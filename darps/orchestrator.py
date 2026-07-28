@@ -264,10 +264,14 @@ class Game:
         bounds = manifest.get("tracks", {}).get(track)
         if bounds is None:
             raise ValueError(f"unknown track '{track}'")
+        char = self.pack.characters()[character_id]
+        settings = (char.get("track_settings", {}) or {}).get(track, {}) or {}
         current = self.state["tracks"].get(track, {}).get(
-            character_id, bounds.get("default", 0))
+            character_id, settings.get("start", bounds.get("start", 0)))
         new_value = float(value) if value is not None else current + float(change)
-        new_value = max(bounds.get("min", -3), min(bounds.get("max", 3), new_value))
+        lo = settings.get("min", bounds.get("min", -3))
+        hi = settings.get("max", bounds.get("max", 3))
+        new_value = max(lo, min(hi, new_value))
         self.state["tracks"].setdefault(track, {})[character_id] = new_value
         if self.cfg.get("autosave", True):
             state_mod.save(self.state, manifest["name"])
@@ -314,7 +318,7 @@ class Game:
         for cid, char in self.pack.characters().items():
             settings = char.get("track_settings", {}) or {}
             for track, bounds in manifest.get("tracks", {}).items():
-                start = (settings.get(track) or {}).get("start", bounds.get("default", 0))
+                start = (settings.get(track) or {}).get("start", bounds.get("start", 0))
                 self.state.setdefault("tracks", {}).setdefault(track, {}).setdefault(cid, start)
 
     def _ensure_persona_defaults(self) -> None:
@@ -611,15 +615,16 @@ class Game:
         attitude_prose = []
         char_settings = char.get("track_settings", {}) or {}
         for track, bounds in manifest.get("tracks", {}).items():
-            value = self.state["tracks"].get(track, {}).get(
-                char_id, bounds.get("default", 0))
             settings = char_settings.get(track, {}) or {}
-            speed = settings.get("speed", 1.0)
+            value = self.state["tracks"].get(track, {}).get(
+                char_id, settings.get("start", bounds.get("start", 0)))
+            speed = settings.get("speed", bounds.get("speed", 1.0))
+            lo = settings.get("min", bounds.get("min", -3))
+            hi = settings.get("max", bounds.get("max", 3))
             new_value = value
             if self._tracks_on():
                 new_value += reading.get("track_shifts", {}).get(track, 0) * speed
-                new_value = max(bounds.get("min", -3),
-                                min(bounds.get("max", 3), new_value))
+                new_value = max(lo, min(hi, new_value))
             projected[track] = new_value
             projected_view["tracks"].setdefault(track, {})[char_id] = new_value
             if self._tracks_on():

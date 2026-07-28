@@ -27,8 +27,10 @@ shared_knowledge:
 
 track_settings:
   disposition:
+    min: -3
+    max: 3
     start: -0.5
-    speed: 0.5
+    speed: 0.35
     guidance: >-
       Mira respects methodical examination and discretion. Unsupported public
       accusations make her defensive.

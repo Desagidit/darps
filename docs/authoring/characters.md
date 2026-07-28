@@ -1,7 +1,8 @@
 # Characters
 
-Character files combine identity, performance guidance, private knowledge,
-shared reputation, and per-character attitude behavior.
+Character files define the NPC characters in your game. In this article we'll go through how to write a character file and what the fields mean.
+
+Character files combine identity, performance guidance, private knowledge, shared reputation, and per-character attitude behavior.
 
 ```yaml
 --8<-- "docs/examples/minimal-pack/characters/mira.yaml"
@@ -19,13 +20,37 @@ shared reputation, and per-character attitude behavior.
 | `common_knowledge` | `false` opts out of implicit common-scope knowledge |
 | `knowledge` | Individual knowledge, optionally gated or revealing facts |
 | `shared_knowledge` | What others know about this character |
-| `track_settings` | Starting values, speed, and supplemental guidance |
+| `track_settings` | Starting values, optional speed overrides, and supplemental guidance |
 | `track_prose` | Behavioral text selected from current track values |
 | `hints` | `false` prevents this character delivering pacing hints |
 
-## Knowledge entries
+## Basic data
 
-A plain entry is freely available:
+Every character has some basic information.
+
+`id`: A unique DARPS ID for this character that will be used internally. You should ensure your game understands what each character's ID is so you can call DARPS to speak to individuals.
+`name`: The character's canonical name that DARPS will preferentially use
+`summary`: A simple summary for the LLM to understand the character. Keep it short.
+`aliases`: Alternate names used by the resolver to help map mentions. You might want to include forenames, nicknames, familial relationships, job titles and so on.
+`background`: A longer form description of the character. This has some redundancy with `summary` but it can help the LLM to have both.
+`knowledge_scopes`: Which scopes this character belongs to. It knows everything within this scope. Consider groups of knowledge. Who are family? Who belong to the household? Who are strangers? Who are expects in a particular subject? Who are accomplices?
+`hints`: If `true` DARPS can allow this character to deliver pacing hints.
+
+
+## Knowledge
+
+*To understand how DARPS uses Knowledge, see [Concept: Knowledge](../concepts/knowledge.md).*
+
+Character `knowledge` defines what that character knows internally. It is not available to other characters (they are not psychic) and is used in all conversation with this character, provided it isn't gated knowledge.
+Knowledge block entries are:
+
+| Field | Engine behaviour |
+|---|---|
+| `content` | Prose placed in the briefing. |
+| `when` | Deterministically controls whether the entry enters the briefing. See [Gates](../concepts/gates.md) for more information. |
+| `reveals` | Links the entry to an engine-validated fact disclosure. See [Facts](../authoring/facts.md) for more information. |
+| `why` | Rendered as concealment guidance on a revealing entry. |
+| `tell` | Rendered as a behavioural tell on a revealing entry. |
 
 ```yaml
 - content: The missing clock was booked in on Tuesday.
@@ -40,15 +65,104 @@ A concealed testimony entry connects knowledge to a fact:
   tell: She becomes exacting whenever the arrival time is mentioned.
 ```
 
-`why` and `tell` shape concealment; they do not provide security. Security
-comes from context inclusion and engine validation.
+`why` and `tell` shape concealment. They do **not** provide security. They are **not** gates.
 
-## Attitude settings
+Anything else is just included as prose, despite how yaml syntax highlighting might make it appear.
 
-`start` may be fractional and `speed` must be positive. A model proposes a
-coarse shift from -2 to 2; speed scales it before bounds are applied. A speed
-of `0.25` therefore makes sustained behavior matter more than one exchange.
+```
+knowledge:
+  - content: "She 'retired at ten o'clock with a headache' (this is her alibi)."
+  - content: "Sir Edmund's nephew Gerald was expected Thursday."
+  # Conditional knowledge: enters context ONLY when the engine's ground truth
+  # names this character the culprit. One file serves every future variant.
+  - content: >
+      YOU KILLED HIM. That afternoon you found the solicitor's letter: a new
+      will, signing Thursday, leaving you nothing.
+	  
+      How you lie: calmly, minimally, never volunteering. Your alibi is the
+      headache. You deflect toward the nephew Gerald, who "stood to gain."
+```
 
-Track prose keys are numeric thresholds stored as YAML strings. DARPS selects
-the highest threshold not exceeding the current value and supplies only that
-prose to the character model.
+In this case "How you lie" is not a special field, although your syntax highlighting may suggest otherwise.
+
+
+## Shared Knowledge
+
+*To understand how DARPS uses Shared Knowledge, see [Concept: Knowledge](../concepts/knowledge.md).*
+
+Character `shared_knowledge` is what other characters know ABOUT this character. Unscoped ("common") entries are known by all characters.
+In every other way, it works identically to `knowledge`. Shared Knowledge block entries are:
+
+| Field | Engine behaviour |
+|---|---|
+| `content` | Prose placed in the briefing. |
+| `when` | Deterministically controls whether the entry enters the briefing. See [Gates](../concepts/gates.md) for more information. |
+| `reveals` | Links the entry to an engine-validated fact disclosure. See [Facts](../authoring/facts.md) for more information. |
+| `why` | Rendered as concealment guidance on a revealing entry. |
+| `tell` | Rendered as a behavioural tell on a revealing entry. |
+| `scope` | For `shared_knowledge`; controls which characters can receive it. |
+
+
+
+## Tracks
+
+Tracks are sliding scales that you can use to judge how characters currently feel.
+
+| Location | Responsibility |
+|---|---|
+| `pack.yaml → tracks` | Declares which tracks exist, their bounds, starting values, normal speeds, and baseline adjudication rules |
+| Character `track_settings` | Overrides any shared field for this character |
+| Character `track_prose` | Describes how the current value affects that character’s behaviour |
+
+Tracks are defined globally in pack.yaml:
+
+```
+tracks:
+  disposition:
+    min: -3
+    max: 3
+    start: 0
+    speed: 0.5
+    guidance: >-
+      Patience, discretion, and useful evidence raise disposition. Insults, accusations without evidence, and threats lower it. Routine questions and repeated pleasantries do not change it.
+default_track: disposition
+```
+
+- `min` and `max` clamp the possible values of the track and the actual value can be anything inbetween
+- `start` the default starting value for the track
+- `speed` is the positive scaling factor used by every character unless they override it.
+- `guidance` defines the shared rules for judging the track.
+
+In this example, we have a fairly generic 'disposition' track and define how the LLM should judge it. It doesn't say how a character reacts to disposition because that belongs in the character files.
+Now that it's defined, every character inherits it. In the Widow's character file, `widow.yaml`:
+
+```
+track_settings:
+  disposition:
+    min: -3
+    max: 2      # she will cooperate, but never become wholly trusting
+    start: -1.0   # defensive beneath impeccable social form
+    speed: 0.35   # deliberately difficult to sway
+    guidance: >
+      Sympathy and social grace alone leave her unchanged. Intelligent,
+      evidence-backed restraint impresses and unsettles her more than kindness
+      or aggression, which she meets with icy amusement.
+
+track_prose:
+  disposition:
+    "-2": >
+      Her Ladyship treats the detective as a hired boor — amused contempt,
+      answers of one sentence, and a standing threat to end the interview.
+    "0": >
+      Her Ladyship is the gracious, grieving hostess — cooperative in form,
+      empty in substance.
+    "1": >
+      Her Ladyship finds the detective almost worth talking to. The irony
+      softens; the answers lengthen; the watchfulness does not.
+```
+
+Note that `track_settings` in the character file is identical in form to the track definition. You do not have to supply any track_settings and may skip any setting within it. Any provided setting will override the pack.yaml's value with the character's value, except guidance which adds to the pack's guidance.
+
+`track_prose` defines how the character's dialogue changes according to different stages of the track. `track_prose` keys are numeric thresholds stored as YAML strings. DARPS selects the highest threshold not exceeding the current value and supplies only that prose to the character model.
+
+Tracks can also be used [as gates](../concepts/gates.md#when-gating-with-tracks).

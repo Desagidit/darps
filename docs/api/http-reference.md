@@ -55,7 +55,7 @@ discovering supported mechanics.
     {"id": "ledger", "name": "the delivery ledger", "aliases": ["book"]}
   ],
   "tracks": {
-    "disposition": {"min": -3, "max": 3, "default": 0}
+    "disposition": {"min": -3, "max": 3, "start": 0, "speed": 0.5}
   },
   "default_track": "disposition",
   "persona": {
@@ -96,14 +96,23 @@ Each entity object contains:
 | `name` | String | Player-facing display name. |
 | `aliases` | Array of strings, optional | Alternate matching terms authored in the pack. |
 
-Each track or persona definition may contain:
+Each track definition may contain:
 
 | Field | Type | Meaning |
 |---|---|---|
 | `min` | Number | Lowest permitted value. |
 | `max` | Number | Highest permitted value. |
-| `default` | Number | Default value before authored character starts are applied. |
-| `speed` | Number, optional | Rate applied to adjudicated changes when defined. |
+| `start` | Number | Pack-wide starting value, inherited unless the character overrides it. |
+| `speed` | Number, optional | Pack-wide rate applied to classifier-adjudicated track shifts. |
+
+Each persona definition may contain:
+
+| Field | Type | Meaning |
+|---|---|---|
+| `min` | Number | Lowest permitted value. |
+| `max` | Number | Highest permitted value. |
+| `default` | Number | Initial session-wide value. |
+| `speed` | Number, optional | Rate applied to classifier-adjudicated persona shifts. |
 
 `GET /pack` never returns facts, descriptions, variables, knowledge, authored
 gates, summaries, or prompt guidance.

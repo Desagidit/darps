@@ -15,7 +15,8 @@ tracks:
   disposition:
     min: -3
     max: 3
-    default: 0
+    start: 0
+    speed: 0.5
     guidance: >
       Sincere respect, patience, kindness, and conduct that protects a
       character's legitimate interests increase disposition. Rudeness,
@@ -25,7 +26,8 @@ tracks:
   fear:
     min: 0
     max: 3
-    default: 0
+    start: 0
+    speed: 0.5
     guidance: >
       Credible threats, demonstrated capacity for harm, and evidence of
       immediate personal danger increase fear. Bluster, ordinary questioning,

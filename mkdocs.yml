@@ -106,6 +106,7 @@ nav:
       - Knowledge: concepts/knowledge.md
       - Briefing: concepts/briefing.md
       - Gates: concepts/gates.md
+      - Hints: concepts/hints.md
       - State and Saves: concepts/state-saves.md
       - Glossary: concepts/glossary.md
   - Pack Authoring:

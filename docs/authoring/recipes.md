@@ -6,10 +6,11 @@
 track_settings:
   disposition:
     start: -1
-    speed: 0.25
 ```
 
 Write track prose at and below `-1`, then explain in guidance what earns trust.
+If this character should move more slowly than the pack-wide rate, add a
+character `speed` override.
 
 ## Add testimony
 
@@ -36,15 +37,17 @@ logic succeeds.
 
 ## Add a custom track
 
-Declare shared bounds and guidance in `pack.yaml`, then add character-specific
-starts, speed, supplemental guidance, and prose bands:
+Declare shared bounds, speed, and guidance in `pack.yaml`, then add
+character-specific starts, optional speed overrides, supplemental guidance,
+and prose bands:
 
 ```yaml
 tracks:
   suspicion:
     min: 0
     max: 4
-    default: 0
+    start: 0
+    speed: 0.25
     guidance: Evidence of deception raises suspicion; transparent explanations lower it.
 ```
 

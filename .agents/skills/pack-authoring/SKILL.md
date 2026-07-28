@@ -63,10 +63,11 @@ HOST GAME, not the pack.
 - **Ground truth lives in vars.yaml** and acts only through `when` gates.
   One character file serves every variant of who-did-it.
 - **Tracks are performed, not shown.** Define each track's shared,
-  secret-free adjudication `guidance` beside its bounds in `pack.yaml`. Give
-  each character `track_settings` with an authored `start` and positive
-  `speed`; add character guidance only as a supplement for exceptions or
-  special sensitivities. Then write `track_prose`
+  secret-free adjudication `guidance`, bounds, `start`, and positive `speed`
+  in `pack.yaml`. Give each character `track_settings` with an authored
+  `start`; override `speed` only for unusually resistant or volatile
+  characters, and add character guidance only as a supplement for exceptions
+  or special sensitivities. Then write `track_prose`
   bands for the reachable fractional range; characters never see numbers.
   Slow speeds make attitudes require sustained conduct rather than one exchange.
   Every declared track is judged independently; keep baseline guidance

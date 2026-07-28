@@ -9,7 +9,8 @@ tracks:
   disposition:
     min: -3
     max: 3
-    default: 0
+    start: 0
+    speed: 0.5
     guidance: >-
       Patience, discretion, and useful evidence raise disposition. Insults,
       accusations without evidence, and threats lower it. Routine questions

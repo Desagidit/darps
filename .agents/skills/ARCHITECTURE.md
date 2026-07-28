@@ -41,8 +41,9 @@ host: talk(character, message, world?, tone?) | examine(target, message, world?,
      recent player messages + already-found evidence + layered secret-free
      guidance (pack baseline plus character supplement) for every declared
      attitude. Proposes one coarse -2..2 shift per track;
-     the engine strips unknown ids, clamps and speed-scales each, then projects
-     all fractional values for this turn. It never sees hidden character
+     the engine strips unknown ids, clamps and scales each by its pack-wide
+     speed or a character override, then projects all fractional values for
+     this turn. It never sees hidden character
      knowledge, ground-truth vars, or the generated reply.
    â”‚
    â–¼
@@ -227,11 +228,14 @@ with slack 1 — the only place hints change rules, and it's an engine decision.
 
 ## Attitude model
 
-Tracks are engine-held, potentially fractional numbers; characters perform
-author-written `track_prose` thresholds, never numbers. A separate secret-free
+Tracks are engine-held, potentially fractional numbers; pack and character
+definitions share `min`/`max`/`start`/`speed`/`guidance`, with character fields
+overriding pack fields. Characters perform author-written `track_prose`
+thresholds, never numbers. A separate secret-free
 attitude call judges every declared track independently from pack-wide
-baseline plus any character-specific supplement. The engine speed-scales each coarse shift and uses all projected
-values for the current reply and reveal gates. The host can disable the whole mechanic
+baseline plus any character-specific supplement. The engine scales each
+coarse shift by its pack-wide speed or a character override and uses all
+projected values for the current reply and reveal gates. The host can disable the whole mechanic
 (`tracks: false`): shifts are ignored, prose reads neutral, and `track_gte`
 gates evaluate true (the mechanic is off; content must not lock forever).
 

@@ -442,3 +442,30 @@ full-corpus prompt. Never partially apply a questionable cache. This makes the
 feature a performance optimization with no narrative semantics, preserves
 D1/D2/D21, and leaves world summarisation for a later author-approved design
 because `world.md` currently mixes compressible lore with hard rules.
+
+## D28. Track speed defaults belong to track definitions
+
+Attitude guidance and numeric bounds are pack-wide, but speed originally
+defaulted to `1.0` unless repeated in every character file. That made the
+normal pacing of a track needlessly character-local and encouraged duplicate
+configuration.
+
+Each `tracks.<id>` definition now owns a positive `speed`, defaulting to
+`1.0`. Character `track_settings.<id>.speed` remains an optional override for
+unusually resistant or volatile characters. This mirrors the existing
+pack/character inheritance relationship, lets different tracks have different
+normal pacing, and keeps character files focused on exceptions.
+
+## D29. Pack and character tracks share one field vocabulary
+
+Pack tracks originally called their initial value `default`, while character
+settings called the same concept `start`. Authors could not copy a track
+definition into a character and edit only its exceptions, and the two names
+suggested a distinction the runtime did not have.
+
+Both levels now use `min`, `max`, `start`, `speed`, and `guidance`. A character
+definition overrides the pack definition field by field, including optional
+narrower character-specific bounds. Bounds may not widen beyond the shared
+scale. The removed track field `default` is rejected
+rather than aliased because DARPS is pre-release. Persona retains `default`
+because it has no per-character inheritance layer and is a separate mechanic.

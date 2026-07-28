@@ -49,7 +49,7 @@ flowchart LR
     subgraph Pack["Pack-authored"]
       Entities["entities + knowledge"]
       FactWeb["facts + conditions"]
-      Guidance["voice + guidance + prose"]
+      Guidance["voice + guidance + prose + track speeds"]
     end
     Host --> Engine
     Pack --> Engine

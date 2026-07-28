@@ -106,8 +106,9 @@ Halloway hasn't got. His briefing is genuinely all he has.
 
 **Step three: attitudes, then speech.** A cheap secret-free call first judges
 the player's conduct independently against the pack's disposition and fear
-baselines plus Halloway's personal supplements. Each coarse shift is scaled by that track's `speed`,
-producing fractional projected attitudes for this turn. The character LLM
+baselines plus Halloway's personal supplements. Each coarse shift is scaled by
+the track's pack-wide `speed`, unless Halloway supplies a character-specific
+override, producing fractional projected attitudes for this turn. The character LLM
 receives prose for both attitudes, then writes Halloway's reply and
 may propose `reveals: [overheard_quarrel]`; it never judges its own mood shift.
 
@@ -226,8 +227,9 @@ a world to be inhabited.
 DARPS simulates instead. A secret-free attitude pass judges each player
 message independently against every authored attitude: shove verbally at
 Halloway and his disposition may drop while a credible threat to the household
-raises fear. The pack defines shared guidance once; characters add only their
-exceptions, starting values, and `speed`, so a
+raises fear. Pack and character tracks use the same field names; characters
+copy or inherit the shared bounds, start, guidance, and normal speed, then
+override only their exceptions, so a
 guarded character can begin below neutral and take several good exchanges to
 win over. Track values may be fractional. The pack author writes what every
 attitude threshold *sounds like*, and the character performs them together without

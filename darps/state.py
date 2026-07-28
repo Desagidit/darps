@@ -98,12 +98,16 @@ def normalize_state(pack, supplied: dict) -> dict:
         if not isinstance(per_character, dict) or any(cid not in character_ids
                                                        for cid in per_character):
             raise ValueError(f"state.tracks.{track} must use known character ids")
-        bounds = manifest["tracks"][track]
         for cid, value in per_character.items():
             if isinstance(value, bool) or not isinstance(value, (int, float)):
                 raise ValueError(f"state.tracks.{track}.{cid} must be numeric")
+            bounds = manifest["tracks"][track]
+            settings = (characters[cid].get("track_settings", {}) or {}).get(
+                track, {}) or {}
+            lo = settings.get("min", bounds.get("min", -3))
+            hi = settings.get("max", bounds.get("max", 3))
             state["tracks"][track][cid] = max(
-                bounds.get("min", -3), min(bounds.get("max", 3), float(value)))
+                lo, min(hi, float(value)))
 
     persona_specs = manifest.get("persona", {}) or {}
     persona = supplied.get("persona", {})

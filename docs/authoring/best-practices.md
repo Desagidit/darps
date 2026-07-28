@@ -20,7 +20,10 @@
 ## Make attitudes rewarding
 
 - State what raises, lowers, and leaves each track unchanged.
-- Use slower speeds for relationships intended to be earned.
+- Use the shared `min`, `max`, `start`, `speed`, and `guidance` vocabulary at
+  both pack and character level.
+- Set the normal speed once on the pack track; override it only for unusually
+  resistant or volatile characters.
 - Add character guidance only for exceptions to the shared track rules.
 - Ensure `track_prose` covers the full reachable range.
 

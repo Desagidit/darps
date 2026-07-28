@@ -55,12 +55,14 @@ tracks:                       # numeric character-attitude tracks
   disposition:
     min: -3
     max: 3
-    default: 0
+    start: 0
+    speed: 0.5
     guidance: "Kindness raises it; hostility lowers it; routine questions do not."
   fear:
     min: 0
     max: 3
-    default: 0
+    start: 0
+    speed: 0.25
     guidance: "Credible threats raise it; reassurance lowers it."
 default_track: disposition    # track used when adjust_track omits one
 
@@ -146,12 +148,11 @@ background: "..."             # a paragraph of life detail (prevents the LLM
 
 track_settings:               # OPTIONAL starting point and sensitivity
   disposition:
-    start: -0.5               # defaults to the manifest track default
-    speed: 0.5                # positive; coarse shifts are multiplied by this
+    start: -0.5               # defaults to the manifest track start
+    speed: 0.35               # OPTIONAL positive override of manifest speed
     guidance: "Protecting the household matters especially to him." # supplement
   fear:
     start: 0
-    speed: 0.5
     guidance: "Credible threats raise it; reassurance lowers it."
 
 knowledge:                    # the unified knowledge model
@@ -187,8 +188,11 @@ track_prose:                  # engine state -> performed attitudes;
 ```
 
 Numbers stay in the engine; characters perform the prose. LLM contexts never
-see raw track values. Values may be fractional. Omitted `start` uses the
-manifest default; omitted `speed` uses `1.0`.
+see raw track values. Values may be fractional. The fields `min`, `max`,
+`start`, `speed`, and `guidance` use the same names in a pack track and
+character `track_settings`. Character fields override the pack definition;
+omitted fields inherit it. Character bounds may narrow, but not exceed, the
+pack bounds. Pack `start` defaults to `0`, and pack `speed` defaults to `1.0`.
 Track `guidance` in `pack.yaml` defines the shared baseline. Character-level
 `guidance` is optional and supplements rather than replaces that baseline;
 use it only for exceptions or character-specific sensitivities.
@@ -394,8 +398,9 @@ so improvisation becomes consistent),
 
 Attitudes are judged before reply generation in a separate, secret-free
 attitude call. It proposes `shifts: {track_id: -2..2}`; the engine strips
-unknown tracks, clamps each shift, multiplies it by that character's
-`track_settings.<track>.speed`, clamps projected values to their bounds, and
+unknown tracks, clamps each shift, multiplies it by the track's pack-wide
+`speed` or that character's `track_settings.<track>.speed` override, clamps
+projected values to their bounds, and
 uses every projection for the current reply and gates. Values commit only
 after generation completes. The call sees player text, tone, recent player
 messages, already-found evidence, and each track's authored `guidance`;

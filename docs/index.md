@@ -4,34 +4,38 @@
 
 # DARPS
 
-<p class="darps-hero__lede">What if your game didn't have a list of conversation options?
-What if your players could just talk freely to NPCs?</p>
+<p class="darps-hero__lede">What if your game didn't have a list of conversation options? What if your players could just talk freely to NPCs?
+DARPS helps solve this problem through an easy-to-use API. You tell it who you're talking to and what you're saying and DARPS</p>
 
 <div class="darps-hero__actions" markdown>
 [Get started](setup/index.md){ .md-button .md-button--primary }
-[How it works](#how-it-works){ .md-button }
+[Why DARPS?](#why-darps){ .md-button }
 </div>
 
 </div>
 
-DARPS helps solve this problem through an easy-to-use API. You tell it who you're talking to and what you're saying and DARPS will:
+DARPS features:
 
-- Check if the query broke the rules of your game
-- Pull information on that character
-- Build a knowledge graph of other game entities the character knows about
-- Retrieves LLM-driven responses to your input
-- Manage characters' changing attitudes toward the player
-- Understand if their response revealed anything important
+- Guardrails so players can't break the rules of your game
+- Extensive knowledge graphing to build realistic character knowledge
+- Secret-first approach means LLMs can't reveal your game's secrets by accident
+- Manages changing attitudes of characters and understands player attitudes
+- Fuzzy matching to understand conversations and link it to important game objects
+- Caching to minimise work on common knowledge
+- And much more!
 
-!!! important "The central rule"
-    You own the narrative truth; LLMs only narrate.
-	Build 'packs' with great settings, intruiging characters and interesting locations. Then use DARPS to let players interact with it.
-	DARPS uses strict isolation of knowledge so you can trust it to not leak secrets or go on a narrative tangent.
+## Why DARPS?
 
-## How it works
+You can't just send player text to an LLM and expect something good to come back.
 
-Your game names the character being addressed—or the object being examined—and supplies the current world snapshot.
-DARPS assembles only the context that interaction may see, calls the model, validates its proposed events, and returns prose plus narrative deltas.
+If a player asks "When did halloway arrive?" but your game ID for Mr Halloway is 'butler', does your game understand? If they need to "inspect the decanter" but they actually "sniff the brandy" does it just fail? Players are unpredictable but your game logic cannot be. You can't build game logic on an infinite spectrum of possible queries and responses.
+LLMs will make things up, leak secrets, lack understanding of your game, use inconsistent tone. The end result isn't much better than a random conversation.
+
+DARPS uses its 'resolver' to understand inputs so player text is linked directly to your game objects. It knows Mr Halloway is The Butler and they have id 'butler'. It knows the decanter has odd-smelling brandy and can understand when a player has made the right connection even if the language doesn't 100% line up - or maybe they just made a spelling mistake!
+
+DARPS understands the player's tone and lets characters react to it. Does a character respond to threats? Does a joke loosen them up? It builds sophisticated knowledge graphs from your game's entities to ensure their knowledge is rich and unique to each character. That knowledge contains only permitted facts so an LLM never has information it shouldn't - and thus cannot be tricked into revealing important plot beats.
+
+The end result is natural conversation between the player and your game with responses that are reliable, bespoke, and immersive for your world.
 
 ![High Level Architecture](./images/darps_highlevel.svg)
 

@@ -134,16 +134,45 @@ Pack.manifest = lambda self: bad_manifest if self.root == spack.root else orig_m
 errs, _ = lint_mod.lint(spack)
 assert any("guidance must be non-empty text" in e for e in errs), errs
 bad_manifest["tracks"]["fear"]["guidance"] = "valid"
+bad_manifest["tracks"]["fear"]["speed"] = "slow"
+errs, _ = lint_mod.lint(spack)
+assert any("track 'fear' speed must be numeric" in e for e in errs), errs
+bad_manifest["tracks"]["fear"]["speed"] = 0
+errs, _ = lint_mod.lint(spack)
+assert any("track 'fear' speed must be positive" in e for e in errs), errs
+bad_manifest["tracks"]["fear"]["speed"] = 0.5
+track_start = bad_manifest["tracks"]["fear"].pop("start")
+bad_manifest["tracks"]["fear"]["default"] = track_start
+errs, _ = lint_mod.lint(spack)
+assert any("field 'default' was renamed; use 'start'" in e for e in errs), errs
+bad_manifest["tracks"]["fear"].pop("default")
+bad_manifest["tracks"]["fear"]["start"] = track_start
 bad_manifest["persona"]["role_consistency"]["speed"] = 0
 errs, _ = lint_mod.lint(spack)
 assert any("persona 'role_consistency' speed must be positive" in e for e in errs), errs
 Pack.manifest = orig_manifest
 # track settings are schema-checked in both directions
-mara_path = tmp / "p" / "characters" / "mara.yaml"
-mara_text = mara_path.read_text(encoding="utf-8")
-mara_path.write_text(mara_text.replace("speed: 0.5", "speed: 0"), encoding="utf-8")
+tom_path = tmp / "p" / "characters" / "tom.yaml"
+tom_text = tom_path.read_text(encoding="utf-8")
+tom_path.write_text(tom_text.replace("start: 0.5", "default: 0.5"),
+                    encoding="utf-8")
+errs, _ = lint_mod.lint(spack)
+assert any("default was renamed; use 'start'" in e for e in errs), errs
+tom_path.write_text(tom_text, encoding="utf-8")
+tom_path.write_text(tom_text.replace("speed: 0.75", "speed: 0"), encoding="utf-8")
 errs, _ = lint_mod.lint(spack)
 assert any("speed must be positive" in e for e in errs), errs
+tom_path.write_text(tom_text, encoding="utf-8")
+# Character-specific bounds participate in static reachability.
+mara_path = tmp / "p" / "characters" / "mara.yaml"
+mara_text = mara_path.read_text(encoding="utf-8")
+mara_path.write_text(mara_text.replace("min: -3", "min: -4", 1), encoding="utf-8")
+errs, _ = lint_mod.lint(spack)
+assert any("bounds must stay within the pack track bounds" in e for e in errs), errs
+mara_path.write_text(mara_text, encoding="utf-8")
+mara_path.write_text(mara_text.replace("max: 3", "max: 0", 1), encoding="utf-8")
+errs, _ = lint_mod.lint(spack)
+assert any("'keepers_admission' is UNREACHABLE" in e for e in errs), errs
 mara_path.write_text(mara_text, encoding="utf-8")
 sg = Game(dict(CFG), spack, state_mod.new_state(smanifest))
 REPLIES += [char()]
@@ -625,6 +654,19 @@ assert std["tracks"]["disposition"]["butler"] == 0.0
 assert std["tracks"]["fear"]["butler"] == 1.0
 assert "Disposition:" in PROMPTS[-1] and "Fear:" in PROMPTS[-1]
 assert "invented" not in std["tracks"]
+assert manifest["tracks"]["disposition"]["speed"] == 0.5
+assert "speed" not in pack.characters()["butler"]["track_settings"]["disposition"]
+# A character may still override the pack-wide speed.
+gwidow, stwidow = game()
+ATTITUDES += [{"disposition": 2, "fear": 0}]
+REPLIES += [char()]
+gwidow.talk("widow", "Let us follow the evidence carefully.",
+            world=SCENE, tone="probing")
+assert round(stwidow["tracks"]["disposition"]["widow"], 5) == -0.3
+widow_disposition = pack.characters()["widow"]["track_settings"]["disposition"]
+assert {"min", "max", "start", "speed", "guidance"} <= set(widow_disposition)
+assert gwidow.adjust_track("widow", value=99, track="disposition") == {
+    "deltas": {"tracks": {"disposition": {"widow": 2.0}}}}
 assert validate.filter_track_shifts(
     {"shifts": {"fear": 99, "invented": 2}},
     {"disposition", "fear"}) == {"disposition": 0, "fear": 2}
@@ -702,6 +744,8 @@ assert sfacts["facts_learned"] == ["torn_letter"]
 #     and no removed character/item compatibility fields.
 assert manifest["default_track"] == "disposition"
 assert "primary_track" not in manifest
+assert all("start" in spec and "default" not in spec
+           for spec in manifest["tracks"].values())
 assert pack.characters()["butler"]["summary"]
 assert "knowledge_scopes" in pack.characters()["butler"]
 assert "shared_knowledge" in pack.characters()["widow"]
@@ -733,6 +777,10 @@ minimal_state = {"state_version": state_mod.STATE_VERSION,
 normalized = state_mod.normalize_state(pack, minimal_state)
 assert normalized["tracks"]["disposition"]["butler"] == 3
 assert normalized["facts_learned"] == [] and normalized["fruitless_turns"] == 0
+widow_state = {**minimal_state,
+               "tracks": {"disposition": {"widow": 99}}}
+assert state_mod.normalize_state(
+    pack, widow_state)["tracks"]["disposition"]["widow"] == 2
 for bad_state in (
         {**minimal_state, "pack_id": "wrong-pack"},
         {**minimal_state, "facts_learned": ["invented"]},
@@ -895,6 +943,9 @@ _port = httpd.server_address[1]
 try:
     metadata = json.loads(_u.urlopen(f"http://127.0.0.1:{_port}/pack").read())
     assert metadata["pack_id"] == "ashworth-manor"
+    assert metadata["tracks"]["disposition"]["speed"] == 0.5
+    assert metadata["tracks"]["disposition"]["start"] == 0
+    assert "default" not in metadata["tracks"]["disposition"]
     assert "examine_stream" in metadata["capabilities"]
     serialized_metadata = json.dumps(metadata).lower()
     assert "guilty knowledge" not in serialized_metadata and "you killed him" not in serialized_metadata

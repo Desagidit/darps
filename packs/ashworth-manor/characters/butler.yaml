@@ -32,12 +32,10 @@ shared_knowledge:
 track_settings:
   disposition:
     start: -0.5   # professionally cooperative, personally guarded
-    speed: 0.5    # trust takes several consistently good exchanges
     guidance: > 
       Politeness, patience, and concern for Lady Constance can earn trust. Accusations make him retreat into wounded formality. Hostility makes him answer in monosyllables and find duties elsewhere. He cannot be intimidated into the truth — only trusted into it.
   fear:
     start: 0
-    speed: 0.5
     guidance: >
       This seasoned servant is especially unmoved by insults or investigative pressure. Threats against her Ladyship or the staff affect him more than threats against himself.
 

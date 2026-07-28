@@ -61,5 +61,6 @@ Attitudes and persona use:
 {"shifts":{"dimension_or_track_id":-1}}
 ```
 
-Unknown IDs disappear; shifts clamp to -2 through 2 before speed and bounds
-are applied.
+Unknown IDs disappear; shifts clamp to -2 through 2 before the pack-wide
+track speed (or a character override) and effective character bounds are
+applied.

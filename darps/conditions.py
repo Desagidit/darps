@@ -73,8 +73,8 @@ def evaluate(cond: dict, *, vars: dict, state: dict, manifest: dict,
         spec = cond["track_gte"]
         track, threshold = spec["track"], spec["value"]
         of = spec.get("of", self_id)
-        default = manifest.get("tracks", {}).get(track, {}).get("default", 0)
-        current = state.get("tracks", {}).get(track, {}).get(of, default)
+        start = manifest.get("tracks", {}).get(track, {}).get("start", 0)
+        current = state.get("tracks", {}).get(track, {}).get(of, start)
         return current >= threshold - track_slack
     if key == "not":
         inner = cond["not"]

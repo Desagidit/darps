@@ -58,6 +58,16 @@ Use `world.md` for premises every response needs.
 Use knowledge for information held by people in the fiction. A location or item's `description` is examination-grade ground truth and **does not become character knowledge**.
 
 If people should know something from it, author a `shared_knowledge` entry.
+Knowledge entries have these fields:
+
+| Field | Engine behaviour |
+|---|---|
+| `content` | Prose placed in the briefing |
+| `when` | Deterministically controls whether the entry enters the briefing |
+| `reveals` | Links the entry to an engine-validated fact disclosure |
+| `why` | Rendered as concealment guidance on a revealing entry |
+| `tell` | Rendered as a behavioural tell on a revealing entry |
+| `scope` | For `shared_knowledge`; controls which scopes can receive it |
 
 ## Individual knowledge
 
@@ -85,8 +95,7 @@ shared_knowledge:
 ```
 
 The entry is about Halloway, but any eligible household character may know it.
-Entity-centric storage keeps one authoritative statement instead of copying it
-into ten character files.
+Entity-centric storage keeps one authoritative statement instead of copying it into ten character files.
 
 ## Scopes
 
@@ -96,10 +105,7 @@ Characters subscribe to named scopes:
 knowledge_scopes: [household, veterans]
 ```
 
-An omitted entry scope means `common`. Common knowledge is available to every
-character by default, but should be used sparingly: it means genuinely
-universal knowledge in this fiction. Prefer a named scope for a large but
-bounded group.
+An omitted entry scope means `common`. Common knowledge is available to every character by default, but should be used sparingly: it means genuinely universal knowledge in this fiction. Prefer a named scope for a large but bounded group.
 
 An exceptional character can opt out without losing named scopes:
 
@@ -108,9 +114,7 @@ knowledge_scopes: [household]
 common_knowledge: false
 ```
 
-This suits outsiders, amnesiacs, isolated beings, or other characters who
-should not inherit ordinary public knowledge. `common_knowledge` defaults to
-`true`.
+This suits outsiders, amnesiacs, isolated beings, or other characters who should not inherit ordinary public knowledge. `common_knowledge` defaults to `true`.
 
 ## Compiling large common-knowledge catalogues
 
@@ -188,10 +192,7 @@ See [Concept: Gates](../concepts/gates.md) for more information on how to gate k
 
 ## Reveals and authority
 
-A `reveals` entry does two things: it briefs the character and grants authority
-to propose that fact on that turn. The engine accepts the reveal only if the
-entry was actually retrieved and the fact's own gates pass. There is no
-separate revealer list to drift out of sync.
+A `reveals` entry does two things: it briefs the character and grants authority to propose that fact on that turn. The engine accepts the reveal only if the entry was actually retrieved and the fact's own gates pass. There is no separate revealer list to drift out of sync.
 
 ## Practical guidance
 

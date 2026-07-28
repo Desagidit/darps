@@ -50,6 +50,28 @@ def lint(pack: Pack) -> tuple[list[str], list[str]]:
         if not isinstance(spec, dict):
             errors.append(f"pack.yaml: track '{track}' must be a mapping")
             continue
+        if "default" in spec:
+            errors.append(f"pack.yaml: track '{track}' field 'default' was "
+                          "renamed; use 'start'")
+        allowed = {"min", "max", "start", "speed", "guidance"}
+        for field in spec.keys() - allowed:
+            if field != "default":
+                errors.append(f"pack.yaml: track '{track}' has unknown field '{field}'")
+        lo, hi = spec.get("min", -3), spec.get("max", 3)
+        start, speed = spec.get("start", 0), spec.get("speed", 1.0)
+        numeric = (lo, hi, start, speed)
+        for field, value in zip(("min", "max", "start", "speed"), numeric):
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                errors.append(f"pack.yaml: track '{track}' {field} must be numeric")
+        if all(not isinstance(v, bool) and isinstance(v, (int, float))
+               for v in (lo, hi)):
+            if lo > hi:
+                errors.append(f"pack.yaml: track '{track}' min must not exceed max")
+            elif (not isinstance(start, bool) and isinstance(start, (int, float))
+                  and not lo <= start <= hi):
+                errors.append(f"pack.yaml: track '{track}' start is outside bounds")
+        if not isinstance(speed, bool) and isinstance(speed, (int, float)) and speed <= 0:
+            errors.append(f"pack.yaml: track '{track}' speed must be positive")
         guidance = spec.get("guidance")
         if guidance is not None and (not isinstance(guidance, str) or not guidance.strip()):
             errors.append(f"pack.yaml: track '{track}' guidance must be non-empty text")
@@ -163,7 +185,7 @@ def lint(pack: Pack) -> tuple[list[str], list[str]]:
     for cid, char in chars.items():
         for k in char.get("knowledge", []) or []:
             if isinstance(k, dict) and "reveals" in k and all(
-                    _best_case(c, facts, set(facts), tracks, game_vars, m,
+                    _best_case(c, facts, set(facts), tracks, game_vars, m, chars,
                                ceiling_state, self_id=cid)
                     for c in (k.get("when") or [])):
                 revealers.setdefault(k["reveals"], set()).add(cid)
@@ -177,7 +199,7 @@ def lint(pack: Pack) -> tuple[list[str], list[str]]:
                     continue
                 if k.get("scope", "common") not in scopes:
                     continue
-                if all(_best_case(c, facts, set(facts), tracks, game_vars, m,
+                if all(_best_case(c, facts, set(facts), tracks, game_vars, m, chars,
                                   ceiling_state, self_id=eid)
                        for c in (k.get("when") or [])):
                     revealers.setdefault(k["reveals"], set()).add(cid)
@@ -294,7 +316,7 @@ def lint(pack: Pack) -> tuple[list[str], list[str]]:
         settings = char.get("track_settings")
         if default_track and not isinstance(settings, dict):
             warnings.append(f"characters/{cid}: no track_settings; '{default_track}' "
-                            "uses manifest default start and speed 1.0")
+                            "uses manifest track defaults")
             settings = {}
         for track, spec in (settings or {}).items():
             if track not in tracks:
@@ -304,18 +326,53 @@ def lint(pack: Pack) -> tuple[list[str], list[str]]:
             if not isinstance(spec, dict):
                 errors.append(f"characters/{cid}: track_settings.{track} must be a mapping")
                 continue
-            start, speed = spec.get("start", tracks[track].get("default", 0)), spec.get("speed", 1.0)
-            if isinstance(start, bool) or not isinstance(start, (int, float)):
-                errors.append(f"characters/{cid}: track_settings.{track}.start must be numeric")
-            elif not tracks[track].get("min", -3) <= start <= tracks[track].get("max", 3):
-                errors.append(f"characters/{cid}: track_settings.{track}.start is outside track bounds")
-            if isinstance(speed, bool) or not isinstance(speed, (int, float)) or speed <= 0:
+            if "default" in spec:
+                errors.append(f"characters/{cid}: track_settings.{track}.default "
+                              "was renamed; use 'start'")
+            allowed = {"min", "max", "start", "speed", "guidance"}
+            for field in spec.keys() - allowed:
+                if field != "default":
+                    errors.append(f"characters/{cid}: track_settings.{track} has "
+                                  f"unknown field '{field}'")
+            lo = spec.get("min", tracks[track].get("min", -3))
+            hi = spec.get("max", tracks[track].get("max", 3))
+            start = spec.get("start", tracks[track].get("start", 0))
+            speed = spec.get("speed", tracks[track].get("speed", 1.0))
+            numeric = (lo, hi, start, speed)
+            for field, value in zip(("min", "max", "start", "speed"), numeric):
+                if isinstance(value, bool) or not isinstance(value, (int, float)):
+                    errors.append(f"characters/{cid}: track_settings.{track}."
+                                  f"{field} must be numeric")
+            if all(not isinstance(v, bool) and isinstance(v, (int, float))
+                   for v in (lo, hi)):
+                if lo > hi:
+                    errors.append(f"characters/{cid}: track_settings.{track}.min "
+                                  "must not exceed max")
+                elif (not isinstance(start, bool) and isinstance(start, (int, float))
+                      and not lo <= start <= hi):
+                    errors.append(f"characters/{cid}: track_settings.{track}.start "
+                                  "is outside track bounds")
+                pack_lo = tracks[track].get("min", -3)
+                pack_hi = tracks[track].get("max", 3)
+                if (not isinstance(pack_lo, bool) and isinstance(pack_lo, (int, float))
+                        and not isinstance(pack_hi, bool)
+                        and isinstance(pack_hi, (int, float))
+                        and (lo < pack_lo or hi > pack_hi)):
+                    errors.append(f"characters/{cid}: track_settings.{track} bounds "
+                                  "must stay within the pack track bounds")
+            if (not isinstance(speed, bool) and isinstance(speed, (int, float))
+                    and speed <= 0):
                 errors.append(f"characters/{cid}: track_settings.{track}.speed must be positive")
+            guidance = spec.get("guidance")
+            if guidance is not None and (
+                    not isinstance(guidance, str) or not guidance.strip()):
+                errors.append(f"characters/{cid}: track_settings.{track}.guidance "
+                              "must be non-empty text")
         for track in tracks:
             spec = settings.get(track) if isinstance(settings, dict) else None
             if not isinstance(spec, dict):
                 warnings.append(f"characters/{cid}: no settings for track '{track}'; "
-                                "uses manifest default start and speed 1.0")
+                                "uses manifest track defaults")
             elif not spec.get("guidance") and not tracks[track].get("guidance"):
                 warnings.append(f"characters/{cid}: track '{track}' has no guidance; "
                                 "automatic adjudication will keep it unchanged")
@@ -338,7 +395,7 @@ def lint(pack: Pack) -> tuple[list[str], list[str]]:
 
     # ------------------------------------------------------ reachability
     reachable = _reachable_facts(facts, discovery_sources,
-                                 revealers, tracks, game_vars, m)
+                                 revealers, tracks, game_vars, m, chars)
     for fid in facts:
         if fid not in reachable:
             errors.append(f"facts.yaml: '{fid}' is UNREACHABLE — no location/item "
@@ -446,7 +503,7 @@ def _find_cycle(graph: dict) -> list | None:
 
 
 def _reachable_facts(facts, discovery_sources, revealers, tracks, game_vars,
-                     manifest):
+                     manifest, chars):
     """Fixed-point reachability: a fact is reachable if its requires are all
     reachable AND it has an examination or knowledge source whose
     source-level `when` gates can pass, AND the
@@ -466,7 +523,7 @@ def _reachable_facts(facts, discovery_sources, revealers, tracks, game_vars,
                 continue
             physical_source = any(
                 all(_best_case(cond, facts, reachable, tracks, game_vars,
-                               manifest, ceiling_state, self_id=None)
+                               manifest, chars, ceiling_state, self_id=None)
                     for cond in source_when)
                 for source_when in discovery_sources.get(fid, []))
             via = revealers.get(fid, set())
@@ -477,7 +534,7 @@ def _reachable_facts(facts, discovery_sources, revealers, tracks, game_vars,
                 selves.append(None)
             ok = all(
                 any(_best_case(cond, facts, reachable, tracks, game_vars,
-                               manifest, ceiling_state, self_id=s)
+                               manifest, chars, ceiling_state, self_id=s)
                     for s in selves)
                 for cond in fact.get("when", []) or [])
             if ok:
@@ -486,7 +543,7 @@ def _reachable_facts(facts, discovery_sources, revealers, tracks, game_vars,
     return reachable
 
 
-def _best_case(cond, facts, reachable, tracks, game_vars, manifest,
+def _best_case(cond, facts, reachable, tracks, game_vars, manifest, chars,
                ceiling_state, self_id):
     """Best-case satisfiability of one condition — the linter's twin of
     conditions.evaluate. Time-varying things (flags, tracks within bounds,
@@ -494,7 +551,13 @@ def _best_case(cond, facts, reachable, tracks, game_vars, manifest,
     key = conditions.condition_key(cond) if isinstance(cond, dict) else None
     if key == "track_gte":
         t = cond["track_gte"]
-        return t.get("value", 0) <= tracks.get(t.get("track"), {}).get("max", 0)
+        track = t.get("track")
+        ceiling = tracks.get(track, {}).get("max", 0)
+        of = t.get("of", self_id)
+        if of in chars:
+            ceiling = ((chars[of].get("track_settings", {}) or {})
+                       .get(track, {}) or {}).get("max", ceiling)
+        return t.get("value", 0) <= ceiling
     if key == "fact_learned":
         return cond["fact_learned"] in reachable
     if key == "flag":
