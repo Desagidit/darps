@@ -24,6 +24,7 @@ Character files combine identity, performance guidance, private knowledge, share
 | `track_prose` | Behavioral text selected from current track values |
 | `hints` | `false` prevents this character delivering pacing hints |
 
+
 ## Basic data
 
 Every character has some basic information.
@@ -34,7 +35,7 @@ Every character has some basic information.
 `aliases`: Alternate names used by the resolver to help map mentions. You might want to include forenames, nicknames, familial relationships, job titles and so on.
 `background`: A longer form description of the character. This has some redundancy with `summary` but it can help the LLM to have both.
 `knowledge_scopes`: Which scopes this character belongs to. It knows everything within this scope. Consider groups of knowledge. Who are family? Who belong to the household? Who are strangers? Who are expects in a particular subject? Who are accomplices?
-`hints`: If `true` DARPS can allow this character to deliver pacing hints.
+`hints`: If `true` DARPS can allow this character to deliver pacing hints. For more information, see [Concept: Hints](../concepts/hints.md).
 
 
 ## Knowledge
@@ -90,8 +91,16 @@ In this case "How you lie" is not a special field, although your syntax highligh
 
 *To understand how DARPS uses Shared Knowledge, see [Concept: Knowledge](../concepts/knowledge.md).*
 
-Character `shared_knowledge` is what other characters know ABOUT this character. Unscoped ("common") entries are known by all characters.
-In every other way, it works identically to `knowledge`. Shared Knowledge block entries are:
+Character `shared_knowledge` is what other characters know ABOUT this character. You will likely spend a lot of time writing `shared_knowledge` as it gives your game a level of rich realism that few other systems can match.
+
+`shared_knowledge` with no scope defined is "common" and known by all characters. By default, every character belongs to the common scope.
+There may be niche circumstances where you'd want to opt out of the common scope (characters with amnesia, for example). Characters can opt out of the common scope with:
+
+```
+common_knowledge: false
+```
+
+Shared Knowledge block entries are:
 
 | Field | Engine behaviour |
 |---|---|
@@ -102,6 +111,62 @@ In every other way, it works identically to `knowledge`. Shared Knowledge block 
 | `tell` | Rendered as a behavioural tell on a revealing entry. |
 | `scope` | For `shared_knowledge`; controls which characters can receive it. |
 
+While `shared_knowledge` works identically to `knowledge` in terms of its fields, they are distinct concepts. Think of `shared_knowledge` as a venn diagram of information that each character takes its own position in.
+You might decide everyone in the household knows who the butler is so you place this in the butler's file:
+
+```
+shared_knowledge:
+    - scope: household
+      content: >
+        Is the butler. Tends to Sir Edmund. Brings the Cocoa. Has served for decades.
+```
+
+And ensure all the household characters have the `household` scope. Strangers might not know him.
+
+```
+shared_knowledge:
+    - scope: household
+      content: >
+        Is the butler. Tends to Sir Edmund. Brings the Cocoa. Has served for decades.
+    - scope: family
+      content: >
+        He has served for decades but remains enigmatic. Loyal and trustworthy. He never drinks the cocoa himself.
+```
+
+Meanwhile the heads of the household might have information that houseguests do not, so we can build knowledge of the Butler in increasing complexity.
+
+```
+shared_knowledge:
+    - scope: household
+      content: >
+        Is the butler. Tends to Sir Edmund. Brings the Cocoa. Has served for decades.
+    - scope: family
+      content: >
+        He has served for decades but remains enigmatic. Loyal and trustworthy. He never drinks the cocoa himself.
+	- scope: guest
+	  content: >
+		He's distant and unsettling. Almost rude.
+```
+
+Meanwhile the same character is seen quite differently to people who don't yet understand him.
+
+You can also [gate](../concepts/gates.md) shared_knowledge, which prevents any character in that scope knowing it until you choose otherwise.
+Perhaps you intend for the player to falsley accuse the Butler halfway through the story after being fed some tricky information. In the second half of the story they might uncover their mistake but in the mean time, all the characters are convinced the Butler did it:
+
+```
+shared_knowledge:
+    - scope: household
+      content: >
+        The Butler murdered Edmund. I can't believe it but the evidense points to him.
+      when:
+        - fact_learned: blamed_butler
+	    - not:
+          fact_learned: disclosed_alibi
+```
+
+In the example above, everyone in the household will think the Butler did it after you blame him. But disclosing an alibi later will absolve him.
+
+`shared_knowledge` is a powerful tool to keep characters acting consistently and affect changes at scale in your game.
 
 
 ## Tracks

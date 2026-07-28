@@ -211,7 +211,39 @@ assert C.evaluate({"not": {"fact_learned": "b"}}, **base)
 assert not C.evaluate({"not": {"bogus": 1}}, **base)          # never fail open
 assert not C.evaluate({"not": {"not": {"bogus": 1}}}, **base)  # recursively closed
 assert C.evaluate({"not": {"not": {"flag": "f"}}}, **base)
+assert C.evaluate({"any": [{"flag": "unset"}, {"fact_learned": "a"}]}, **base)
+assert not C.evaluate({"any": [{"flag": "unset"},
+                              {"fact_learned": "b"}]}, **base)
+assert C.evaluate({"not": {"any": [{"flag": "unset"},
+                                  {"fact_learned": "b"}]}}, **base)
+assert not C.evaluate({"any": []}, **base)                    # empty fails closed
+assert not C.evaluate({"not": {"any": []}}, **base)           # even under not
+assert not C.evaluate({"any": [{"flag": "unset"},
+                              {"bogus": 1}]}, **base)          # malformed group
+assert not C.evaluate({"not": {"any": [{"bogus": 1}]}}, **base)
 assert not C.evaluate({"has_item": {"item": "x"}}, **base)     # removed: unknown
+
+# `any` participates in lint and fixed-point reachability. One satisfiable
+# route makes the fact reachable; no satisfiable alternatives does not.
+orig_facts = Pack.facts
+scaffold_facts = yaml.safe_load(yaml.safe_dump(spack.facts()))
+scaffold_facts["keepers_admission"]["when"] = [{
+    "any": [
+        {"var": "keeper", "is": "nobody"},
+        {"var": "keeper", "is": "mara"},
+    ],
+}]
+Pack.facts = lambda self: (
+    scaffold_facts if self.root == spack.root else orig_facts(self))
+errs, _ = lint_mod.lint(spack)
+assert not any("'keepers_admission' is UNREACHABLE" in e for e in errs), errs
+scaffold_facts["keepers_admission"]["when"][0]["any"][1]["is"] = "also_nobody"
+errs, _ = lint_mod.lint(spack)
+assert any("'keepers_admission' is UNREACHABLE" in e for e in errs), errs
+scaffold_facts["keepers_admission"]["when"] = [{"any": []}]
+errs, _ = lint_mod.lint(spack)
+assert any("'any' must contain a non-empty list" in e for e in errs), errs
+Pack.facts = orig_facts
 
 # 9) tracks off (config): attitude mechanic disabled — no track application,
 #    neutral prose, and track_gte gates open so reveals aren't locked forever

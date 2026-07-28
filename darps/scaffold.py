@@ -129,7 +129,12 @@ background: >
 # the `when` gates hold (this is the context-isolation secrecy mechanism).
 # HOST FLAGS are the progress signal: the game injects them per call (or
 # keeps a flags file up to date), and knowledge gates on them — including
-# negations, for lies that expire.
+# negations, for lies that expire. A `when` list is AND; use `any` for
+# alternative routes:
+#   when:
+#     - any:
+#         - flag: door_opened
+#         - fact_learned: hidden_door
 knowledge:
   - content: "The house has been in the family a long time. Longer than most think."
   - content: "She dusts the bookcase every day, and never moves it."

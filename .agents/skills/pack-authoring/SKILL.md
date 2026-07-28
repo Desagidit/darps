@@ -58,8 +58,10 @@ HOST GAME, not the pack.
 - **Host flags are the progress signal.** The game injects flags per call
   (or keeps a flags file up to date); knowledge and examine_reveals gate on
   them — `{flag: clue_a}` activates a confession, `{not: {flag: clue_c}}`
-  keeps a lie in context *until* the game signals otherwise. Flag names are
-  a contract with the host game, not lintable — document them in comments.
+  keeps a lie in context *until* the game signals otherwise. Conditions
+  directly under `when` are ANDed; use a non-empty `any:` list when several
+  flags, facts, or other conditions provide alternative routes. Flag names
+  are a contract with the host game, not lintable — document them in comments.
 - **Ground truth lives in vars.yaml** and acts only through `when` gates.
   One character file serves every variant of who-did-it.
 - **Tracks are performed, not shown.** Define each track's shared,

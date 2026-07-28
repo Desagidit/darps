@@ -51,7 +51,8 @@ For more information on tracks, see [Pack Authoring: Characters](../authoring/ch
 Secrets are protected by absence, not merely instruction. Gates prevent designated information ever entering an LLM prompt and most games will use them heavily. Gates come in 3 types:
 
 - `scope`: Implicit gating. Characters have scopes and know all `shared_knowledge` within that scope (unless it is also gated by other conditions).
-- `when`: Explicit gating. Information only enters prompts if all the conditions are met. `when` is very flexible and strict.
+- `when`: Explicit gating. Information only enters prompts if all its
+  conditions are met; use `any` inside it for alternative routes.
 - `trigger`: Simple options added to items and location interactions that let you broaden the scope of that interaction. For example, you might have a clue that needs the player to check under the rug. The semantic resolver can try and determine if the player attempts this without exact wording but you can help it along with triggers like "lift" "pull" "move".
 
 Gates always belong with the thing they are gating access to so keeping track of them is simpler than if they were defined centrally. For more information on gates, see [the Gates concept](../concepts/gates.md).

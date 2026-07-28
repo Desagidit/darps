@@ -193,6 +193,12 @@ retrieve what matters to the exchange. Ask Alice "Who makes the cocoa?" and an
 eligible entry stored on an absent Halloway can answer because the word cocoa
 is in the knowledge itself. Presence never grants or removes memory.
 
+Conditions listed directly under `when` all have to pass. When a story has
+several valid routes to the same information, an `any` group makes those
+alternatives explicit—for example, the cellar may become discussable when
+either the host sets `cellar_open` or the player learns the `cellar_key` fact.
+`not` can wrap one ordinary condition or one complete `any` group.
+
 Names, aliases, immediate location/items, and meaningful content words provide
 a deterministic retrieval floor. For paraphrases and indirect references,
 `knowledge_resolver: true` adds a semantic classifier call. It sees only the

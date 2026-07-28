@@ -24,7 +24,7 @@
 
 **Condition**
 : A declarative gate from DARPS's closed vocabulary, such as `flag`,
-  `fact_learned`, or `track_gte`.
+  `fact_learned`, `track_gte`, `any`, or `not`.
 
 **Delta**
 : A validated state change returned to the host, including changed tracks,

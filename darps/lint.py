@@ -457,6 +457,15 @@ def _lint_condition(cond, where, game_vars, facts, tracks, errors, allow_self):
         _lint_condition(inner, f"{where} (inside not)", game_vars, facts, tracks,
                         errors, allow_self)
         return
+    if key == "any":
+        children = cond.get("any")
+        if not isinstance(children, list) or not children:
+            errors.append(f"{where}: 'any' must contain a non-empty list of conditions")
+            return
+        for index, child in enumerate(children):
+            _lint_condition(child, f"{where} (inside any, entry {index})",
+                            game_vars, facts, tracks, errors, allow_self)
+        return
     if key == "var":
         if cond["var"] not in game_vars:
             errors.append(f"{where}: condition references undefined var '{cond['var']}'")
@@ -549,6 +558,15 @@ def _best_case(cond, facts, reachable, tracks, game_vars, manifest, chars,
     conditions.evaluate. Time-varying things (flags, tracks within bounds,
     negations of time-varying things) are assumed satisfiable at SOME moment."""
     key = conditions.condition_key(cond) if isinstance(cond, dict) else None
+    fixed = _fixed_condition_value(
+        cond, game_vars, manifest, ceiling_state, self_id)
+    if fixed is not None:
+        return fixed
+    if key == "any":
+        return any(
+            _best_case(child, facts, reachable, tracks, game_vars, manifest,
+                       chars, ceiling_state, self_id)
+            for child in cond["any"])
     if key == "track_gte":
         t = cond["track_gte"]
         track = t.get("track")
@@ -566,11 +584,38 @@ def _best_case(cond, facts, reachable, tracks, game_vars, manifest, chars,
         return conditions.evaluate(cond, vars=game_vars, state=ceiling_state,
                                    manifest=manifest, self_id=self_id)
     if key == "not":
-        inner = cond["not"]
-        ikey = conditions.condition_key(inner) if isinstance(inner, dict) else None
-        if ikey == "var":                 # vars are fixed: negation is decidable
-            return not conditions.evaluate(inner, vars=game_vars,
-                                           state=ceiling_state,
-                                           manifest=manifest, self_id=self_id)
         return True                       # negations of time-varying gates: best case
     return False
+
+
+def _fixed_condition_value(cond, game_vars, manifest, state, self_id):
+    """Return a condition's immutable truth value, or None if it can change.
+
+    Vars are fixed pack truth. Recursive `any`/`not` groups made solely from
+    fixed predicates are therefore decidable during reachability linting;
+    flags, learned facts, and tracks remain time-varying.
+    """
+    key = conditions.condition_key(cond) if isinstance(cond, dict) else None
+    if key == "var":
+        return conditions.evaluate(
+            cond, vars=game_vars, state=state, manifest=manifest,
+            self_id=self_id)
+    if key == "any":
+        children = cond.get("any")
+        if not isinstance(children, list) or not children:
+            return False
+        values = [
+            _fixed_condition_value(
+                child, game_vars, manifest, state, self_id)
+            for child in children
+        ]
+        if any(value is True for value in values):
+            return True
+        if all(value is False for value in values):
+            return False
+        return None
+    if key == "not":
+        value = _fixed_condition_value(
+            cond["not"], game_vars, manifest, state, self_id)
+        return None if value is None else not value
+    return None

@@ -84,35 +84,48 @@ when:
 
 The simplest gate is using flags. Flags are entirely host-owned and are not declared in, or managed by, DARPS. They are (optionally) passed by the game in the [/talk call](../api/http-reference.md#post-talk). These are good for when certain knowledge relies on binary game state changes.
 
-```
+```yaml
 knowledge:
   - content: >
       The cellar door is now open. You may discuss what is inside.
     when:
-      - {flag: cellar_open}
+      - flag: cellar_open
 ```
 
 You can check for negative flags as well.
 
-```
+```yaml
 knowledge:
   - content: >
       You insist the cellar has been sealed for years.
     when:
-      - {not: {flag: cellar_open}}
+      - not:
+          flag: cellar_open
 ```
 
 ### when: gating with Facts
 
 Similar to Flags, Facts check if a binary condition is met. Flags are best used when the thing you want to check against relies on analysing character dialogue or examining pack items/locations.
 
-```
+```yaml
 knowledge:
   - content: >
       The player has found the torn letter. You can no longer deny knowing
       about the new will.
     when:
-      - {fact_learned: torn_letter}
+      - fact_learned: torn_letter
+```
+
+Again, you can check for negative facts
+
+```yaml
+knowledge:
+  - content: >
+      The player has not found the torn letter. You can continue denying that
+      you knew about the new will.
+    when:
+      - not:
+          fact_learned: torn_letter
 ```
 
 ### when: gating with Variables
@@ -120,12 +133,13 @@ knowledge:
 Packs have variables declared in vars.yaml. These are generally used to swap around key game details. For example, if you wanted to quickly change who the culprit is. Or who holds a key item.
 In these cases, vars can be tested against as key-value pairs. Be aware that `self` can be used if that var holds the entity ID in question.
 
-```
+```yaml
 shared_knowledge:
   - scope: household
     content: Her sleeping medicine went missing shortly before the murder.
     when:
-      - {var: culprit, is: self}
+      - var: culprit
+        is: self
 ```
 
 ### when: gating with Tracks
@@ -158,21 +172,64 @@ shared_knowledge:
           value: 1
 ```
 
+
 ### when: Combining gates
 
-You can mix and match your gates to lock knowledge behind more complex requirements.
+Conditions listed directly under `when` use AND: every entry must pass.
 
-```
+```yaml
 knowledge:
   - content: >
       You are prepared to explain what happened in the cellar.
     when:
-      - {flag: cellar_open}
-      - {fact_learned: muddy_footprints}
+      - flag: cellar_open
+      - fact_learned: muddy_footprints
       - track_gte:
           track: disposition
           value: 1.5
 ```
+
+You can mix and match positive and negative gates (AND):
+
+```yaml
+knowledge:
+  - content: >
+      You are prepared to explain what happened in the cellar.
+    when:
+      - flag: cellar_open
+      - not:
+          fact_learned: muddy_footprints
+      - track_gte:
+          track: disposition
+          value: 1.5
+```
+
+Use `any` when several alternative routes should satisfy one part of a gate (OR):
+
+```yaml
+knowledge:
+  - content: >
+      You are prepared to enter the cellar with the player.
+    when:
+      - fact_learned: cellar_map
+      - any:
+          - flag: cellar_open
+          - flag: steward_has_key
+          - fact_learned: cellar_key
+```
+
+This requires the cellar map **and** at least one way of gaining entry. Entries inside `any` can use any valid condition type. The list must not be empty.
+
+`not` can wrap an `any` group. This activates only while neither route is available:
+
+```yaml
+when:
+  - not:
+      any:
+        - flag: cellar_open
+        - fact_learned: cellar_key
+```
+
 
 ## Triggers
 

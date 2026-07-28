@@ -16,18 +16,19 @@ Vocabulary (spec 5):
   {track_gte: {track: <t>, value: <n>, of: <char_id>?}}
                                           relationship track at/above n;
                                           `of` defaults to character in context
+  {any: [<condition>, ...]}               at least one wrapped condition is true
   {not: <condition>}                      negation of exactly one condition —
                                           e.g. "include this lie until the
                                           player has clue_c":
                                           {not: {flag: clue_c}}
 """
 
-KNOWN_KEYS = {"var", "fact_learned", "flag", "track_gte", "not"}
+KNOWN_KEYS = {"var", "fact_learned", "flag", "track_gte", "any", "not"}
 
 
 def condition_key(cond: dict) -> str | None:
     """The vocabulary key a condition uses, or None if unrecognized."""
-    for k in ("var", "fact_learned", "flag", "track_gte", "not"):
+    for k in ("var", "fact_learned", "flag", "track_gte", "any", "not"):
         if k in cond:
             return k
     return None
@@ -41,6 +42,10 @@ def is_known(cond) -> bool:
     key = condition_key(cond)
     if key is None:
         return False
+    if key == "any":
+        children = cond["any"]
+        return (isinstance(children, list) and bool(children)
+                and all(is_known(child) for child in children))
     if key == "not":
         return is_known(cond["not"])
     return True
@@ -76,6 +81,15 @@ def evaluate(cond: dict, *, vars: dict, state: dict, manifest: dict,
         start = manifest.get("tracks", {}).get(track, {}).get("start", 0)
         current = state.get("tracks", {}).get(track, {}).get(of, start)
         return current >= threshold - track_slack
+    if key == "any":
+        children = cond["any"]
+        if (not isinstance(children, list) or not children
+                or not all(is_known(child) for child in children)):
+            return False
+        return any(evaluate(child, vars=vars, state=state, manifest=manifest,
+                            self_id=self_id, track_slack=track_slack,
+                            tracks_enabled=tracks_enabled)
+                   for child in children)
     if key == "not":
         inner = cond["not"]
         if not is_known(inner):

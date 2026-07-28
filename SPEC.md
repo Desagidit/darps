@@ -312,10 +312,12 @@ entity), `facts[].when`, and `examine_reveals[].when`.
 | `{fact_learned: <fact_id>}` | the player has learned the fact |
 | `{flag: <name>}` | the HOST's flag is set — flags are the game's progress signal, injected per call and/or read from a flags file (§13); packs may gate on any flag name |
 | `{track_gte: {track: <t>, value: <n>, of: <char_id>?}}` | the track is ≥ n; `of` defaults to the character in context |
+| `{any: [<condition>, ...]}` | at least one condition in the non-empty list is true; alternatives may be any valid condition |
 | `{not: <condition>}` | the wrapped condition is false — for knowledge that *expires* (a lie held until a flag is set). Wraps exactly one condition; may not directly wrap another `not`. A malformed inner condition makes the whole `not` false (negation never weakens fail-closed). |
 
 Every conditional list in pack content uses the field name `when`; the removed
-field name `conditions` is invalid. Lists of conditions are conjunctions.
+field name `conditions` is invalid. Lists of conditions are conjunctions;
+use `any` inside the list when one of several alternative routes is sufficient.
 Unknown condition types evaluate false
 at runtime and are errors at validation time. **Growing this vocabulary
 requires updating this table, the evaluator, and the validator in the same

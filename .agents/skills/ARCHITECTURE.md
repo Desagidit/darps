@@ -205,7 +205,9 @@ per call (`world.flags`) and/or written to a YAML the game keeps up to date
 gates on them with `when:` — including negations for lies that expire
 (`{not: {flag: clue_c}}`). Flag names are never linted: they belong to the
 host, so the validator treats them as satisfiable-in-principle when proving
-fact reachability.
+fact reachability. Conditions directly under `when` are ANDed; an
+`any: [<condition>, ...]` condition supplies explicit alternative routes and
+participates recursively in validation and reachability.
 
 ## Places and items: description, not simulation
 

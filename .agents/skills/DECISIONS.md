@@ -469,3 +469,17 @@ narrower character-specific bounds. Bounds may not widen beyond the shared
 scale. The removed track field `default` is rejected
 rather than aliased because DARPS is pre-release. Persona retains `default`
 because it has no per-character inheritance layer and is a separate mechanic.
+
+## D30. Alternative solution routes use the recursive `any` condition
+
+Top-level `when` lists remain conjunctions: every listed condition must pass.
+For stories with several valid ways through the same gate, the closed
+condition vocabulary includes `any`, whose non-empty list passes when at least
+one child condition passes. This keeps alternative routes local to the content
+they unlock instead of forcing the host to manufacture aggregate flags.
+
+`any` contains ordinary conditions and may itself be wrapped by `not`, so it
+composes without introducing an arbitrary expression language. Runtime and
+lint validation are recursive. Empty or malformed groups fail closed even
+under negation, while static reachability treats a fact as reachable when at
+least one authored alternative can be satisfied.
